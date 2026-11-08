@@ -19,6 +19,18 @@ Two styles from shared code (board, swap, match scan, gravity); only the rules a
 
 No special pieces (line clearers, bombs) in the first version; add them once the core works and is measured. No difficulty to start with.
 
+**Build order (decided 2026-11-08): core, then endless, then levels.**
+
+1. **The shared core:** the board without initial runs, the cursor, the swap with its animation, the match scan, clearing, gravity, refills, cascades, the score. Playable but endless with no end.
+2. **Endless (style 2) to completion:** the rising level and game over when no swap is left, plus the result for the launcher. Its "any move left?" check also serves levels (reshuffling a stuck board).
+3. **Levels (style 1) on top:** move counter, score target, level number and seed, pass/fail, next level.
+
+Building one style first risks leaving no memory for the other, so: measure `fre(0)` after every step, estimate what levels needs once the core is done and keep that much free, and keep the style in a variable from the start wherever the code differs.
+
+**Initial runs:** the fill (1000) avoids them; the draw (1100) only shows `b%()` and never changes it. The board is the game state, and the screen shows it, so redraws, the match scan and seeded levels all see the same board.
+
+**L, T and + shapes** aren't shapes of their own: a horizontal run of 3+ and a vertical run of 3+ that share a piece (at least 5 pieces, 3 wide and 3 tall). The match scan marks every piece in any run of 3+ and clears all marked pieces together, which handles crossing runs without shape detection. A special piece for these later only needs to test "marked by both a horizontal and a vertical run".
+
 ### Leaderboard
 
 Fields `LVL` then `PTS`. One registered game, with the style as the variant: 1 = levels, 2 = endless. A difficulty can come later as more variant codes. Still needed elsewhere:
@@ -67,22 +79,53 @@ Rules, modes and scoring, as the program implements them.
 
 The screen is 22×23 characters; screen RAM starts at 7680 and color RAM at 38400. Black background.
 
-The board is 8x8 pieces at a 2x2 pitch: one character per piece, with a gap column and a gap row between pieces. Including the cursor's outer edges that's 17 columns by 17 rows, which leaves room for the score and moves above. Exact rows and columns get mapped here when the board is drawn.
+The board is 8x8 pieces at a 2x2 pitch: one character per piece, with a gap column and a gap row between pieces. Including the cursor's outer edges that's 17 columns by 17 rows, which leaves room for the score and moves above.
+
+| Rows | Columns | What |
+|---|---|---|
+| 3-19 | 2-18 | the board, with the cursor's room around it |
+| 4, 6, … 18 | 3, 5, … 17 | the pieces: board row r is screen row 4+2r, board column c is screen column 3+2c |
+
+Rows 0-2 and 20-22 are free for the score, moves and messages.
+
+The top-left piece is at screen address 7680 + 4×22 + 3 = 7771 (`ba`). Each board row down adds 2 screen rows (44 bytes), each column right adds 2 bytes, so piece (r, c) is at `ba+r*44+c*2`. Its color RAM is 30720 higher (`co`; 38400 − 7680).
 
 ## Data model
 
-Arrays and what each element holds. Document the bit layout of any packed value.
+- `b%(63)`: the board, one element per cell, holding the piece type 0-5. Cell i is board row `int(i/8)`, column `iand7`; so i = r×8 + c. An integer array: 2 bytes per element instead of 5.
+- `pg%(5)`, `pc%(5)`: each piece type's screen code (for `poke`) and color, read from `data` at init:
+
+| Type | Glyph | Screen code (PETSCII) | Color |
+|---|---|---|---|
+| 0 | ♠ | 65 (97) | 7 yellow |
+| 1 | ♥ | 83 (115) | 2 red |
+| 2 | ♣ | 88 (120) | 5 green |
+| 3 | ♦ | 90 (122) | 3 cyan |
+| 4 | ● | 81 (113) | 4 purple |
+| 5 | ○ | 87 (119) | 1 white |
+
+Screen codes, not PETSCII: a `poke` into screen RAM takes the screen code, and graphics glyphs 96-127 are screen codes 64-95. Purple goes on the filled ball, which has the most pixels, and white on the hollow circle; both were the hardest to see on black (2026-11-08). The colors are a first pick, to judge on the real board.
 
 ## Routines
 
 | Lines | Routine |
 |---|---|
-| 100 | init |
+| 100 | init: empty the keyboard buffer, black screen, seed `rnd`, read the piece table, clear the screen, fill and draw the board |
+| 300 | wait for a key (after emptying the buffer), then end |
+| 1000 | fill the board with random pieces 0-5 (matches allowed for now) |
+| 1100 | draw the board by poking screen and color RAM |
 
 ## Variables
 
 | Name | Meaning |
 |---|---|
+| `b%()` | the board (see "Data model") |
+| `pg%()`, `pc%()` | piece glyph (screen code) and color, by type |
+| `ba` | screen address of the top-left piece (7771) |
+| `co` | color RAM offset from screen RAM (30720) |
+| `i` | loop counter |
+| `p` | a piece's screen address while drawing |
+| `t` | throwaway result (`rnd(-ti)` seeding) |
 | `a$` | last key from `get` |
 
 ## Sound
@@ -95,3 +138,4 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 
 | Date | Free | After |
 |---|---|---|
+| 2026-11-08 | 2438 | the board: random fill and draw, with `rem`s (PRG 931 bytes) |
