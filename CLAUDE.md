@@ -8,6 +8,8 @@ MonkeySwap, a match-3 puzzle game for an **unexpanded VIC-20**, written in Commo
 
 **Work in small steps.** The user wants to review and fully understand every piece of code in this game: one routine or idea per change, with the BASIC choices explained (why this construct, what it costs). Stop after each step for review; don't build ahead.
 
+**Short comments.** One short `rem` per routine (a few words, on the routine's first line), nothing more: long `rem`s took 1737 of 2751 bytes by step 3 (2026-11-08). The explanations go in `docs/design.md` (routine table, data model, variables) and in the step's walkthrough.
+
 ## Build and run
 
 - **Build + run (what the IDE Build does):** `powershell -NoProfile -ExecutionPolicy Bypass -File buildtools/build-and-run.ps1 -BasFile src/<name>.bas`
@@ -26,7 +28,7 @@ MonkeySwap, a match-3 puzzle game for an **unexpanded VIC-20**, written in Commo
 
 ## Source files (`src/`)
 
-- `monkeyswap.bas`: the game. So far it fills an 8x8 board with random pieces, draws it and waits for a key.
+- `monkeyswap.bas`: the game. So far it fills an 8x8 board without runs of three, draws it, and moves a rounded box cursor with WASD; any other key ends it.
 
 ## Docs
 
