@@ -51,7 +51,7 @@ ROM (PETSCII) glyphs to start, to keep memory low: six distinct glyphs (♠ 97, 
 | `w` `a` `s` `d` | move the cursor (it stops at the board's edges) |
 | Shift + `w` `a` `s` `d` | swap the piece under the cursor with its neighbour in that direction |
 
-- One keypress per swap; there's no "pick up" state. `get` returns a shifted letter as 128 + the plain letter (Shift+W = 215, W = 87; to verify in xvic), so `and127` gives the plain letter and both share one direction decode.
+- One keypress per swap; there's no "pick up" state. `get` returns a shifted letter as 128 + the plain letter (Shift+W = 215, W = 87; tested in xvic by typing those codes into the keyboard buffer, a real Shift press still to try), so `and127` gives the plain letter and both share one direction decode.
 - With Shift Lock down, every WASD press swaps. "How to play" mentions it; no code for it.
 - After a swap, the cursor stays on the cell the piece moved to.
 - Keys typed while a move plays out are dropped: the keyboard buffer is emptied (`poke198,0`) once the board settles after every swap.
@@ -116,11 +116,14 @@ Screen codes, not PETSCII: a `poke` into screen RAM takes the screen code, and g
 | Lines | Routine |
 |---|---|
 | 100 | init: empty the keyboard buffer, black screen, seed `rnd`, read the piece and box tables, clear the screen and make the board area white, fill and draw the board, put the cursor at row 3, column 3 |
-| 300 | play: show the cursor, empty the buffer (autostart's stray `z` and keys typed during setup, which arrive after the `poke198,0` at 110), then wait for keys. `w`/`a`/`s`/`d` move the cursor one cell (erase, move, draw); the new row and column use comparisons as numbers (−1 when true): `r=cr-(a$="s"andcr<7)+(a$="w"andcr>0)`, so at an edge nothing changes and nothing is redrawn. Any other key ends the program (for now). Typed-ahead moves are kept, so quick taps all count. |
+| 300 | play: show the cursor, empty the buffer (autostart's stray `z` and keys typed during setup, which arrive after the `poke198,0` at 110), then wait for keys. `w`/`a`/`s`/`d` move the cursor one cell (erase, move, draw); the new row and column use comparisons as numbers (−1 when true): `r=cr-(a$="s"andcr<7)+(a$="w"andcr>0)`, so at an edge nothing changes and nothing is redrawn. With Shift held (`sw`, set when `asc(a$)>127`; `and127` turns the key back into the plain letter), the same direction swaps instead (2200), and the buffer is emptied afterwards (back to 330). Any other key ends the program (for now). Typed-ahead moves are kept, so quick taps all count. |
 | 1000 | fill the board with random pieces 0-5, without runs of three: a piece (`t`) that would make three with the two cells to its left (from column 2) or the two above (from row 2) is drawn again. Nested `if`s guard the edges, since `and` doesn't short-circuit and `b%(i-2)` would be out of range. |
-| 1100 | draw the board by poking screen and color RAM |
+| 1100 | draw the board: 1200 for each of the 64 cells |
+| 1200 | draw cell `i` by poking screen and color RAM: piece glyph `pg%(b%(i))` and color `pc%(b%(i))` at `ba+int(i/8)*44+(iand7)*2` |
 | 2000 | draw (`km=1`) or erase (`km=0`) a rounded box with its top-left corner at `ka`, `kw` by `kh` cells: four corners, then the top and bottom lines, then the sides one screen row (22) at a time |
 | 2100 | the cursor: set up a 3x3 box around the piece at `cr`, `cc` (top-left one row up and one column left: −23) and call 2000 |
+| 2200 | swap the piece at `cr`,`cc` with its neighbour at `r`,`c`: erase the cursor; grow the box over both cells (its top-left is the cell with the smaller index `m`, which is the upper or left one; `kw=3-2*(r=cr)` makes it 5 wide for a swap in the same row, `kh` likewise 5 high for one in the same column); pause; swap the two values in `b%()` through `t` and redraw both cells; pause; erase the grown box; draw the cursor at the new spot. Every swap is allowed for now (no match check yet). |
+| 2900 | pause `n` jiffies (1/60 s), using `ti`, so the speed doesn't depend on what else runs |
 
 ## Variables
 
@@ -133,7 +136,11 @@ Screen codes, not PETSCII: a `poke` into screen RAM takes the screen code, and g
 | `kg%()` | box glyphs: row 0 erases, row 1 draws |
 | `ka`, `kw`, `kh`, `km` | box: top-left screen address, width, height (cells), mode (1 draw, 0 erase) |
 | `cr`, `cc` | cursor: board row and column, 0-7 |
-| `r`, `c` | the cursor's new row and column while moving |
+| `r`, `c` | the cursor's new row and column while moving, and the neighbour while swapping |
+| `sw` | the key was shifted: −1 swap, 0 move |
+| `x`, `y` | the two cells' indexes (0-63) while swapping |
+| `m` | the smaller of `x` and `y`: the grown box's top-left cell |
+| `n` | pause length in jiffies (5 for each swap pause, about 1/12 s; tuned by eye 2026-11-08, first tried 10) |
 | `e` | the box's bottom-left screen address, inside 2000 |
 | `i` | loop counter (board loops) |
 | `j` | loop counter (init and the box, so the box can run inside an `i` loop later) |
@@ -155,3 +162,4 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | 2026-11-08 | 2210 | fill without initial runs, with `rem`s (PRG 1159 bytes) |
 | 2026-11-08 | 515 | the cursor: box routine and WASD moves, with long `rem`s (PRG 2751 bytes; 1014 without the 30 `rem` lines, so the comments took 1737) |
 | 2026-11-08 | 2022 | the same, with one short `rem` per routine (PRG 1244 bytes); explanations live here instead |
+| 2026-11-08 | 1524 | the swap animation, every swap allowed (PRG 1707 bytes) |

@@ -17,15 +17,18 @@
 240 gosub1100
 260 cr=3:cc=3
 
-300 rem play: wasd moves
+300 rem play: wasd moves, shift+wasd swaps
 310 km=1:gosub2100
 330 poke198,0
 340 geta$:ifa$=""then340
+350 sw=asc(a$)>127
+355 ifswthena$=chr$(asc(a$)and127)
 360 ifa$="w"ora$="a"ora$="s"ora$="d"then390
 370 end
 390 r=cr-(a$="s"andcr<7)+(a$="w"andcr>0)
 400 c=cc-(a$="d"andcc<7)+(a$="a"andcc>0)
 420 ifr=crthenifc=ccthen340
+430 ifswthengosub2200:goto330
 440 km=0:gosub2100
 450 cr=r:cc=c
 460 km=1:gosub2100
@@ -42,11 +45,15 @@
 
 1100 rem draw board
 1110 fori=0to63
-1120 p=ba+int(i/8)*44+(iand7)*2
-1130 pokep,pg%(b%(i))
-1140 pokep+co,pc%(b%(i))
-1150 next
-1160 return
+1120 gosub1200
+1130 next
+1140 return
+
+1200 rem draw cell i
+1210 p=ba+int(i/8)*44+(iand7)*2
+1220 pokep,pg%(b%(i))
+1230 pokep+co,pc%(b%(i))
+1240 return
 
 2000 rem box at ka, kw x kh; km=1 draw, 0 erase
 2010 e=ka+(kh-1)*22
@@ -61,3 +68,21 @@
 2120 kw=3:kh=3
 2130 gosub2000
 2140 return
+
+2200 rem swap cr,cc with r,c: grow, swap, shrink
+2210 km=0:gosub2100
+2220 x=cr*8+cc:y=r*8+c:m=x
+2230 ify<xthenm=y
+2240 ka=ba+int(m/8)*44+(mand7)*2-23
+2250 kw=3-2*(r=cr):kh=3-2*(c=cc)
+2260 km=1:gosub2000:n=5:gosub2900
+2270 t=b%(x):b%(x)=b%(y):b%(y)=t
+2280 i=x:gosub1200:i=y:gosub1200:gosub2900
+2290 km=0:gosub2000
+2300 cr=r:cc=c:km=1:gosub2100
+2310 return
+
+2900 rem pause n jiffies
+2910 t=ti+n
+2920 ifti<tthen2920
+2930 return
