@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-GAMENAME, a GENRE for an **unexpanded VIC-20**, written in Commodore BASIC V2 (petcat text format). The README has the rules and controls; `docs/design.md` explains how the program works. `docs/todo.md` lists known issues and ideas.
+MonkeyBusiness, a match-3 puzzle game for an **unexpanded VIC-20**, written in Commodore BASIC V2 (petcat text format). The README has the rules and controls; `docs/design.md` explains how the program works. `docs/todo.md` lists known issues and ideas. The design decisions made so far are in the `meta` repo, `ideas.md` ("MonkeyBusiness"), until `design.md` takes them over.
+
+**Work in small steps.** The user wants to review and fully understand every piece of code in this game: one routine or idea per change, with the BASIC choices explained (why this construct, what it costs). Stop after each step for review; don't build ahead.
 
 ## Build and run
 
@@ -24,7 +26,7 @@ GAMENAME, a GENRE for an **unexpanded VIC-20**, written in Commodore BASIC V2 (p
 
 ## Source files (`src/`)
 
-- `template.bas`: the game (rename it for the project).
+- `monkeybusiness.bas`: the game. For now only the template's start: it empties the keyboard buffer, prints a line and waits for a key.
 
 ## Docs
 
