@@ -1,6 +1,6 @@
-# MonkeyBusiness design notes
+# MonkeySwap design notes
 
-How `src/monkeybusiness.bas` works. Once the source is tightened it has no comments (they cost too much memory on an unexpanded VIC-20), so this file is where the explanations live. Update it whenever the code changes.
+How `src/monkeyswap.bas` works. Once the source is tightened it has no comments (they cost too much memory on an unexpanded VIC-20), so this file is where the explanations live. Update it whenever the code changes.
 
 ## Decisions so far
 
