@@ -1,6 +1,6 @@
-# MonkeyBusiness
+# MonkeySwap
 
-MonkeyBusiness is a match-3 puzzle game for the **unexpanded VIC-20**, written in Commodore BASIC V2. **In development:** nothing is playable yet.
+MonkeySwap is a match-3 puzzle game for the **unexpanded VIC-20**, written in Commodore BASIC V2. **In development:** nothing is playable yet.
 
 ## features (planned)
 
@@ -30,7 +30,7 @@ None yet.
 
 ```
 src/
-  monkeybusiness.bas the game
+  monkeyswap.bas     the game
 
 prgs/
   (.prg files built by the GitHub Action)
@@ -64,7 +64,7 @@ buildtools/
 The `.prg` is generated with `petcat`. The repository includes Linux and Windows versions in `tools/`.
 
 ```
-petcat -w2 -l 1001 -o prgs/monkeybusiness src/monkeybusiness.bas
+petcat -w2 -l 1001 -o prgs/monkeyswap src/monkeyswap.bas
 ```
 
 `-l 1001` sets the load address to $1001, the start of BASIC on an unexpanded VIC-20.
@@ -85,13 +85,13 @@ The IDE config folders are gitignored, so copy the task file into place once:
 ### in VICE
 
 ```
-xvic -memory none -autostart prgs/monkeybusiness
+xvic -memory none -autostart prgs/monkeyswap
 ```
 
 or load it from the BASIC prompt:
 
 ```
-load "monkeybusiness",8
+load "monkeyswap",8
 run
 ```
 
