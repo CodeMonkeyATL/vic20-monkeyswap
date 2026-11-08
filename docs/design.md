@@ -112,7 +112,7 @@ Screen codes, not PETSCII: a `poke` into screen RAM takes the screen code, and g
 |---|---|
 | 100 | init: empty the keyboard buffer, black screen, seed `rnd`, read the piece table, clear the screen, fill and draw the board |
 | 300 | wait for a key (after emptying the buffer), then end |
-| 1000 | fill the board with random pieces 0-5 (matches allowed for now) |
+| 1000 | fill the board with random pieces 0-5, without runs of three: a piece that would make three with the two cells to its left or the two above is drawn again |
 | 1100 | draw the board by poking screen and color RAM |
 
 ## Variables
@@ -125,7 +125,7 @@ Screen codes, not PETSCII: a `poke` into screen RAM takes the screen code, and g
 | `co` | color RAM offset from screen RAM (30720) |
 | `i` | loop counter |
 | `p` | a piece's screen address while drawing |
-| `t` | throwaway result (`rnd(-ti)` seeding) |
+| `t` | the piece being tried while filling; also a throwaway result (`rnd(-ti)` seeding) |
 | `a$` | last key from `get` |
 
 ## Sound
@@ -139,3 +139,4 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | Date | Free | After |
 |---|---|---|
 | 2026-11-08 | 2438 | the board: random fill and draw, with `rem`s (PRG 931 bytes) |
+| 2026-11-08 | 2210 | fill without initial runs, with `rem`s (PRG 1159 bytes) |

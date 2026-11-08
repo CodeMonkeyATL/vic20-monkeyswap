@@ -21,11 +21,16 @@
 310 geta$:ifa$=""then310
 320 end
 
-1000 rem fill the board with random pieces 0-5
+1000 rem fill the board with random pieces 0-5, without runs of three
 1010 fori=0to63
-1020 b%(i)=int(rnd(1)*6)
-1030 next
-1040 return
+1020 t=int(rnd(1)*6)
+1030 rem same as the two cells to the left? (only from column 2 on)
+1040 if(iand7)>1thenift=b%(i-1)andt=b%(i-2)then1020
+1050 rem same as the two cells above? (only from row 2 on)
+1060 ifi>15thenift=b%(i-8)andt=b%(i-16)then1020
+1070 b%(i)=t
+1080 next
+1090 return
 
 1100 rem draw the board: cell i is row int(i/8), column iand7
 1110 fori=0to63
