@@ -90,6 +90,8 @@ Rows 0-2 and 20-22 are free for the score, moves and messages.
 
 The top-left piece is at screen address 7680 + 4×22 + 3 = 7771 (`ba`). Each board row down adds 2 screen rows (44 bytes), each column right adds 2 bytes, so piece (r, c) is at `ba+r*44+c*2`. Its color RAM is 30720 higher (`co`; 38400 − 7680).
 
+**The board area is white in color RAM.** At init, `{wht}` and 17 printed rows of 19 spaces (rows 3-19, columns 0-18) set it: `print` writes the current color into every cell it prints, spaces included, while `{clr}` leaves color RAM alone (both checked in xvic, 2026-11-08). The pieces are then poked over it in their own colors, and the cursor box, which lives in the gap cells, only pokes screen RAM.
+
 ## Data model
 
 - `b%(63)`: the board, one element per cell, holding the piece type 0-5. Cell i is board row `int(i/8)`, column `iand7`; so i = r×8 + c. An integer array: 2 bytes per element instead of 5.
@@ -106,14 +108,19 @@ The top-left piece is at screen address 7680 + 4×22 + 3 = 7771 (`ba`). Each boa
 
 Screen codes, not PETSCII: a `poke` into screen RAM takes the screen code, and graphics glyphs 96-127 are screen codes 64-95. Purple goes on the filled ball, which has the most pixels, and white on the hollow circle; both were the hardest to see on black (2026-11-08). The colors are a first pick, to judge on the real board.
 
+- `kg%(1,5)`: the box glyphs, as screen codes. Row 1 draws: `╭` 85, `╮` 73, `╰` 74, `╯` 75, `─` 64, `│` 93 (PETSCII 117, 105, 106, 107, 96, 125). Row 0 is all spaces (32) and erases. The box routine pokes `kg%(km,…)`, so the mode `km` picks the row and one routine both draws and erases.
+- The cursor is kept as a board row and column (`cr`, `cc`, 0-7), not as a screen address: the edge checks and the swap need the row and column, and the address is computed from them.
+
 ## Routines
 
 | Lines | Routine |
 |---|---|
-| 100 | init: empty the keyboard buffer, black screen, seed `rnd`, read the piece table, clear the screen, fill and draw the board |
-| 300 | wait for a key (after emptying the buffer), then end |
-| 1000 | fill the board with random pieces 0-5, without runs of three: a piece that would make three with the two cells to its left or the two above is drawn again |
+| 100 | init: empty the keyboard buffer, black screen, seed `rnd`, read the piece and box tables, clear the screen and make the board area white, fill and draw the board, put the cursor at row 3, column 3 |
+| 300 | play: show the cursor, empty the buffer (autostart's stray `z` and keys typed during setup, which arrive after the `poke198,0` at 110), then wait for keys. `w`/`a`/`s`/`d` move the cursor one cell (erase, move, draw); the new row and column use comparisons as numbers (−1 when true): `r=cr-(a$="s"andcr<7)+(a$="w"andcr>0)`, so at an edge nothing changes and nothing is redrawn. Any other key ends the program (for now). Typed-ahead moves are kept, so quick taps all count. |
+| 1000 | fill the board with random pieces 0-5, without runs of three: a piece (`t`) that would make three with the two cells to its left (from column 2) or the two above (from row 2) is drawn again. Nested `if`s guard the edges, since `and` doesn't short-circuit and `b%(i-2)` would be out of range. |
 | 1100 | draw the board by poking screen and color RAM |
+| 2000 | draw (`km=1`) or erase (`km=0`) a rounded box with its top-left corner at `ka`, `kw` by `kh` cells: four corners, then the top and bottom lines, then the sides one screen row (22) at a time |
+| 2100 | the cursor: set up a 3x3 box around the piece at `cr`, `cc` (top-left one row up and one column left: −23) and call 2000 |
 
 ## Variables
 
@@ -123,7 +130,13 @@ Screen codes, not PETSCII: a `poke` into screen RAM takes the screen code, and g
 | `pg%()`, `pc%()` | piece glyph (screen code) and color, by type |
 | `ba` | screen address of the top-left piece (7771) |
 | `co` | color RAM offset from screen RAM (30720) |
-| `i` | loop counter |
+| `kg%()` | box glyphs: row 0 erases, row 1 draws |
+| `ka`, `kw`, `kh`, `km` | box: top-left screen address, width, height (cells), mode (1 draw, 0 erase) |
+| `cr`, `cc` | cursor: board row and column, 0-7 |
+| `r`, `c` | the cursor's new row and column while moving |
+| `e` | the box's bottom-left screen address, inside 2000 |
+| `i` | loop counter (board loops) |
+| `j` | loop counter (init and the box, so the box can run inside an `i` loop later) |
 | `p` | a piece's screen address while drawing |
 | `t` | the piece being tried while filling; also a throwaway result (`rnd(-ti)` seeding) |
 | `a$` | last key from `get` |
@@ -140,3 +153,5 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 |---|---|---|
 | 2026-11-08 | 2438 | the board: random fill and draw, with `rem`s (PRG 931 bytes) |
 | 2026-11-08 | 2210 | fill without initial runs, with `rem`s (PRG 1159 bytes) |
+| 2026-11-08 | 515 | the cursor: box routine and WASD moves, with long `rem`s (PRG 2751 bytes; 1014 without the 30 `rem` lines, so the comments took 1737) |
+| 2026-11-08 | 2022 | the same, with one short `rem` per routine (PRG 1244 bytes); explanations live here instead |
