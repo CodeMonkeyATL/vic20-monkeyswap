@@ -26,7 +26,7 @@ MonkeySwap, a match-3 puzzle game for an **unexpanded VIC-20**, written in Commo
 
 ## Source files (`src/`)
 
-- `monkeyswap.bas`: the game. For now only the template's start: it empties the keyboard buffer, prints a line and waits for a key.
+- `monkeyswap.bas`: the game. So far it fills an 8x8 board with random pieces, draws it and waits for a key.
 
 ## Docs
 
