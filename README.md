@@ -106,6 +106,7 @@ When a pull request that changes any `.bas` file is merged (or a `v*` tag is pus
 - runs the repository's `tools/petcat` on each changed `.bas` file
 - writes the resulting `.prg` files to `prgs/`
 - commits them to `main`, naming the pull request or tag in the commit message
+- when a pull request deletes or renames a `.bas` file, removes that file's old `.prg` from `prgs/` in the same commit
 
 This keeps the PRGs in sync with the BASIC source without installing the full VICE package.
 
