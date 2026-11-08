@@ -1,6 +1,6 @@
-# template design notes
+# MonkeyBusiness design notes
 
-How `src/template.bas` works. Once the source is tightened it has no comments (they cost too much memory on an unexpanded VIC-20), so this file is where the explanations live. Update it whenever the code changes.
+How `src/monkeybusiness.bas` works. Once the source is tightened it has no comments (they cost too much memory on an unexpanded VIC-20), so this file is where the explanations live. Update it whenever the code changes.
 
 ## The game
 

@@ -1,17 +1,17 @@
-# template
+# MonkeyBusiness
 
-A starter repo for VIC-20 BASIC V2 games. Rename `template` throughout (this README, `src/template.bas`, `docs/`, `CLAUDE.md`) and replace the placeholder sections.
+MonkeyBusiness is a match-3 puzzle game for the **unexpanded VIC-20**, written in Commodore BASIC V2. **In development:** nothing is playable yet.
 
-GAMENAME is a GENRE for the **unexpanded VIC-20**, written in Commodore BASIC V2.
+## features (planned)
 
-## features
-
-- list game features here
+- an 8x8 board: swap two neighbouring pieces to line up three or more of a kind
+- two styles: **levels**, each with a score target and a move limit, and **endless**, where play goes on until no swap is left
+- online leaderboards through the CodeMonkeyATL launcher
 - runs on a stock VIC-20 with no memory expansion
 
 ## how to play
 
-Game rules here.
+To be written once the game plays.
 
 | Key | Action |
 |---|---|
@@ -19,7 +19,7 @@ Game rules here.
 
 ## screenshots
 
-![gameplay](screenshots/gameplay.png)
+None yet.
 
 ## compatibility
 
@@ -30,7 +30,7 @@ Game rules here.
 
 ```
 src/
-  template.bas       the game
+  monkeybusiness.bas the game
 
 prgs/
   (.prg files built by the GitHub Action)
@@ -64,7 +64,7 @@ buildtools/
 The `.prg` is generated with `petcat`. The repository includes Linux and Windows versions in `tools/`.
 
 ```
-petcat -w2 -l 1001 -o prgs/template src/template.bas
+petcat -w2 -l 1001 -o prgs/monkeybusiness src/monkeybusiness.bas
 ```
 
 `-l 1001` sets the load address to $1001, the start of BASIC on an unexpanded VIC-20.
@@ -85,13 +85,13 @@ The IDE config folders are gitignored, so copy the task file into place once:
 ### in VICE
 
 ```
-xvic -memory none -autostart prgs/template
+xvic -memory none -autostart prgs/monkeybusiness
 ```
 
 or load it from the BASIC prompt:
 
 ```
-load "template",8
+load "monkeybusiness",8
 run
 ```
 
