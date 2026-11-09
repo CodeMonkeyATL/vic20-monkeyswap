@@ -121,7 +121,7 @@ Only cells that just changed are checked, never the whole board: a full scan too
 
 **Why the windows around each changed cell find every run, whole:** the board holds no run of 3 between moves. After a swap, every new run contains a moved piece, and at most 2 matching pieces sit on either side of it (3 would have been a run before), so the 3 windows across and 3 down that contain the piece cover the whole run, five-wide included. After gravity and refills (later steps), a run can be longer and mix changed and unchanged pieces, but unchanged pieces still can't have 3 in a row among themselves, so every unchanged piece in a run is within 2 cells of a changed one: checking around every changed cell covers every cell of every run. Overlapping windows mark a cell once (the mark bit).
 
-**Until the cascade loop exists (step 9), the board can hold runs** that refills or falling pieces formed, which breaks the assumption above: a swap that extends such a run only clears the part within 2 cells of the moved piece (found by the user in step 8: ♦ ♦ ♦ left in rows 0-2 of column 0 by a refill, a ♦ swapped into row 3, and only rows 1-3 cleared). Step 9 clears those runs before the next move, which restores the assumption.
+**Runs left by refills (step 8, found by the user) are gone since step 9:** a refill or a fall could form a run that stayed on the board, and a swap that extended it only cleared the part within 2 cells of the moved piece (♦ ♦ ♦ left in rows 0-2 of column 0, a ♦ swapped into row 3, only rows 1-3 cleared). The cascade loop now clears every run before the next move, so the assumption above holds again. Tested 2026-11-08: two runs of 24 random keys left 0 runs on the board.
 
 **Changed cells aren't stored:** a swap has exactly two (`x`, `y`); after gravity, every cell from the top of a column down to its lowest hole has changed, and the hole bytes (`bh`) record that row per column. Only the matched cells are a list (the match list at `bm`).
 
@@ -136,14 +136,17 @@ Only cells that just changed are checked, never the whole board: a full scan too
 | 1200 | draw cell `i` by poking screen and color RAM: the cell's byte in `w` (`peek(bb+i)`), then glyph `pg%(wand7)` (+128, reversed, when marked) and color `pc%(wand7)` at `ba+int(i/8)*44+(iand7)*2` |
 | 2000 | draw (`km=1`) or erase (`km=0`) a rounded box with its top-left corner at `ka`, `kw` by `kh` cells: four corners, then the top and bottom lines, then the sides one screen row (22) at a time |
 | 2100 | the cursor: set up a 3x3 box around the piece at `cr`, `cc` (top-left one row up and one column left: −23) and call 2000 |
-| 2200 | swap the piece at `cr`,`cc` with its neighbour at `r`,`c`: erase the cursor; grow the box over both cells (its top-left is the cell with the smaller index `m`, which is the upper or left one; `kw=3-2*(r=cr)` makes it 5 wide for a swap in the same row, `kh` likewise 5 high for one in the same column); pause; swap the two cells' bytes through `t` (2400) and redraw both cells; pause; erase the grown box; draw the cursor at the new spot. After the swap, 3000 checks around both cells (`x`, `y`); with no match (`mn=0`) the pieces swap back and the cursor stays. With a match, 3200 clears the matched cells and 3300 lets the columns fall and refill. |
+| 2200 | swap the piece at `cr`,`cc` with its neighbour at `r`,`c`: erase the cursor; grow the box over both cells (its top-left is the cell with the smaller index `m`, which is the upper or left one; `kw=3-2*(r=cr)` makes it 5 wide for a swap in the same row, `kh` likewise 5 high for one in the same column); pause; swap the two cells' bytes through `t` (2400) and redraw both cells; pause; erase the grown box; draw the cursor at the new spot. After the swap, 3000 checks around both cells (`x`, `y`); with no match (`mn=0`) the pieces swap back and the cursor stays. With a match, the cascade (3500) clears, lets the columns fall and refill, and repeats while new runs form. |
 | 2400 | swap the values of cells `x` and `y` through `t` and redraw both |
 | 2900 | pause `n` jiffies (1/60 s), using `ti`, so the speed doesn't depend on what else runs |
-| 3000 | check the windows around cell `i`: across, the windows starting at columns `lo`-`hi` (2 left of `i`'s column to its column, kept within 0-5); down, likewise for rows. A window of three equal types (`and7`) goes to 3100. |
-| 3100 | mark the window at addresses `s`, `s+j`, `s+2j` (`j` 1 across, 8 down): each cell not yet marked gets `or8` and goes on the match list (as `q-bb`, its cell number) |
+| 3000 | check the windows around cell `i`: across, the windows starting at columns `lo`-`hi` (2 left of `i`'s column to its column, kept within 0-5); down, likewise for rows; each through 3150 |
+| 3100 | mark the window at addresses `s`, `s+j`, `s+2j` (`j` 1 across, 8 down): each cell not yet marked gets `or8` and goes on the match list (as `q-bb`, its cell number), while the list has room (29) |
+| 3150 | one window at address `s` with step `j` (1 across, 8 down): three equal types (`and7`) go to 3100. Shared by the swap check and the cascade check. |
 | 3200 | clear the matched cells: show them reversed (marked), pause 30 jiffies, then set each to 6 (empty) and redraw it as a space |
 | 3300 | gravity: fill the hole bytes from the match list (count each column's holes, keep its lowest row), then run frames until no column moves, with a 3-jiffy pause between frames. Each frame runs 3400 for every column with holes left (`band120`, the count bits). |
-| 3400 | one frame for column `g`: find its lowest hole, searching up from the stored row (contiguous holes keep their lowest hole in place, so this usually succeeds at once); move every piece above it down one row and put a new random piece in row 0, redrawing as it goes; one hole fewer. The loop keeps the board address `a` and the screen address `p` and steps them by −8 and −44, instead of calling 1200 per cell (which recomputes the address). |
+| 3400 | one frame for column `g`: find its lowest hole, searching up from the stored row (contiguous holes keep their lowest hole in place, so this usually succeeds at once); move every piece above it down one row and put a new random piece in row 0, redrawing as it goes; one hole fewer. With the hole in row 0 there's nothing above to move, so 3440 jumps past the loop: **a BASIC V2 `for` loop always runs its body once**, and `forz=0to1step-1` would copy the byte below the board into row 0 and put the new piece outside the board, drawn above it and written into the launcher's result area (found by the user, 2026-11-08). The loop keeps the board address `a` and the screen address `p` and steps them by −8 and −44, instead of calling 1200 per cell (which recomputes the address). |
+| 3500 | the cascade: clear (3200), fall (3300), then check every window touching a changed cell (3600 for each changed column, then across); if anything matched, again. Changed cells are rows 0 to the lowest hole in each column with bit 128 in its hole byte. |
+| 3600 | one changed column `g`: widen the column range (`cl`-`ch`) and the deepest row (`lm`), then check its vertical windows starting at rows 0 to its lowest hole row (at most 5). The horizontal windows are checked afterwards in 3500, rows 0 to `lm`, from 2 columns left of `cl` to `ch` (within 0-5): checking each changed cell's own windows instead would test the same windows many times over. |
 
 ## Variables
 
@@ -171,6 +174,9 @@ Only cells that just changed are checked, never the whole board: a full scan too
 | `b` | the column's hole byte (see "Data model") |
 | `f` | a frame moved something (1) or not (0) |
 | `a`, `z` | in 3400: the board address of the cell being filled, and its row |
+| `cl`, `ch`, `lm` | in the cascade: first and last changed column, deepest changed row |
+| `l` | a changed column's lowest hole row, in 3600 |
+| `r` | also the row loop in the cascade's horizontal check |
 | `e` | the box's bottom-left screen address, inside 2000 |
 | `i` | loop counter (board loops) |
 | `j` | loop counter (init and the box, so the box can run inside an `i` loop later) |
@@ -198,3 +204,4 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | 2026-11-08 | 1331 | the board and match list in the cassette buffer instead of `b%()`/`mk%()`, after a swap (PRG 1958 bytes) |
 | 2026-11-08 | 1330 | clearing: matched cells become empty (type 6) after the flash (PRG 1958 bytes) |
 | 2026-11-08 | 861 | gravity and refills, falling a row per frame (PRG 2382 bytes) |
+| 2026-11-08 | 621 | the cascade loop, and the row-0 fix (PRG 2657 bytes; measured after a swap that may not have matched, so about 28 less once the cascade's variables exist) |
