@@ -2,7 +2,7 @@
 110 poke198,0
 130 poke36879,8
 150 t=rnd(-ti)
-170 dimb%(63),pg%(5),pc%(5),kg%(1,5)
+170 dimb%(63),pg%(5),pc%(5),kg%(1,5),mk%(35)
 180 fori=0to5:readpg%(i),pc%(i):next
 190 rem pieces: screen code, color
 192 data65,7,83,2,88,5,90,3,81,4,87,1
@@ -49,10 +49,10 @@
 1130 next
 1140 return
 
-1200 rem draw cell i
+1200 rem draw cell i; marked (b%>7) reversed
 1210 p=ba+int(i/8)*44+(iand7)*2
-1220 pokep,pg%(b%(i))
-1230 pokep+co,pc%(b%(i))
+1220 pokep,pg%(b%(i)and7)-128*(b%(i)>7)
+1230 pokep+co,pc%(b%(i)and7)
 1240 return
 
 2000 rem box at ka, kw x kh; km=1 draw, 0 erase
@@ -76,13 +76,46 @@
 2240 ka=ba+int(m/8)*44+(mand7)*2-23
 2250 kw=3-2*(r=cr):kh=3-2*(c=cc)
 2260 km=1:gosub2000:n=5:gosub2900
-2270 t=b%(x):b%(x)=b%(y):b%(y)=t
-2280 i=x:gosub1200:i=y:gosub1200:gosub2900
+2270 gosub2400:gosub2900
+2275 mn=0:i=x:gosub3000:i=y:gosub3000
+2280 ifmn=0thengosub2400:r=cr:c=cc:gosub2900
 2290 km=0:gosub2000
 2300 cr=r:cc=c:km=1:gosub2100
+2305 ifmnthengosub3200
 2310 return
+
+2400 rem swap cells x,y and redraw them
+2410 t=b%(x):b%(x)=b%(y):b%(y)=t
+2420 i=x:gosub1200:i=y:gosub1200
+2430 return
 
 2900 rem pause n jiffies
 2910 t=ti+n
 2920 ifti<tthen2920
 2930 return
+
+3000 rem check windows around cell i
+3010 u=iand7:v=int(i/8)
+3020 lo=u-2:iflo<0thenlo=0
+3030 hi=u:ifhi>5thenhi=5
+3040 fors=i-u+lotoi-u+hi
+3050 t=b%(s)and7:ift=(b%(s+1)and7)andt=(b%(s+2)and7)thenj=1:gosub3100
+3060 next
+3070 lo=v-2:iflo<0thenlo=0
+3080 hi=v:ifhi>5thenhi=5
+3090 fors=lo*8+utohi*8+ustep8
+3092 t=b%(s)and7:ift=(b%(s+8)and7)andt=(b%(s+16)and7)thenj=8:gosub3100
+3094 next
+3096 return
+
+3100 rem mark s,s+j,s+2j; list new ones in mk%
+3110 fork=0to2:q=s+k*j
+3120 ifb%(q)<8thenb%(q)=b%(q)or8:mk%(mn)=q:mn=mn+1
+3130 next
+3140 return
+
+3200 rem show marks, then unmark (until clearing exists)
+3210 fork=0tomn-1:i=mk%(k):gosub1200:next
+3220 n=30:gosub2900
+3230 fork=0tomn-1:i=mk%(k):b%(i)=b%(i)and7:gosub1200:next
+3240 return

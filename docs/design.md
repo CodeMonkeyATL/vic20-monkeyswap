@@ -94,7 +94,7 @@ The top-left piece is at screen address 7680 + 4×22 + 3 = 7771 (`ba`). Each boa
 
 ## Data model
 
-- `b%(63)`: the board, one element per cell, holding the piece type 0-5. Cell i is board row `int(i/8)`, column `iand7`; so i = r×8 + c. An integer array: 2 bytes per element instead of 5.
+- `b%(63)`: the board, one element per cell, holding the piece type 0-5. Cell i is board row `int(i/8)`, column `iand7`; so i = r×8 + c. An integer array: 2 bytes per element instead of 5. **Bit layout:** bits 0-2 hold the piece type (`b%(i)and7`), bit 3 (+8) is the match mark (`b%(i)>7` means marked; `b%(i)=b%(i)or8` marks). A mark only exists between a check and the clearing; the board holds none between moves.
 - `pg%(5)`, `pc%(5)`: each piece type's screen code (for `poke`) and color, read from `data` at init:
 
 | Type | Glyph | Screen code (PETSCII) | Color |
@@ -108,8 +108,17 @@ The top-left piece is at screen address 7680 + 4×22 + 3 = 7771 (`ba`). Each boa
 
 Screen codes, not PETSCII: a `poke` into screen RAM takes the screen code, and graphics glyphs 96-127 are screen codes 64-95. Purple goes on the filled ball, which has the most pixels, and white on the hollow circle; both were the hardest to see on black (2026-11-08). The colors are a first pick, to judge on the real board.
 
+- `mk%(35)`: the matched list, the cells marked in the current round, `mn` long. The mark bit keeps a cell from being listed twice (crossing runs share a cell). A cross of two five-runs is 9 cells; 36 leaves room for cascades.
 - `kg%(1,5)`: the box glyphs, as screen codes. Row 1 draws: `╭` 85, `╮` 73, `╰` 74, `╯` 75, `─` 64, `│` 93 (PETSCII 117, 105, 106, 107, 96, 125). Row 0 is all spaces (32) and erases. The box routine pokes `kg%(km,…)`, so the mode `km` picks the row and one routine both draws and erases.
 - The cursor is kept as a board row and column (`cr`, `cc`, 0-7), not as a screen address: the edge checks and the swap need the row and column, and the address is computed from them.
+
+## Finding matches
+
+Only cells that just changed are checked, never the whole board: a full scan took 166 jiffies (2.8 s); a check around one cell takes about 10-27 (2026-11-08).
+
+**Why the windows around each changed cell find every run, whole:** the board holds no run of 3 between moves. After a swap, every new run contains a moved piece, and at most 2 matching pieces sit on either side of it (3 would have been a run before), so the 3 windows across and 3 down that contain the piece cover the whole run, five-wide included. After gravity and refills (later steps), a run can be longer and mix changed and unchanged pieces, but unchanged pieces still can't have 3 in a row among themselves, so every unchanged piece in a run is within 2 cells of a changed one: checking around every changed cell covers every cell of every run. Overlapping windows mark a cell once (the mark bit).
+
+**Changed cells aren't stored:** a swap has exactly two (`x`, `y`); gravity will have known ranges per column (every cell from the top down to the lowest cleared one). Only the matched cells are a list (`mk%`).
 
 ## Routines
 
@@ -122,8 +131,12 @@ Screen codes, not PETSCII: a `poke` into screen RAM takes the screen code, and g
 | 1200 | draw cell `i` by poking screen and color RAM: piece glyph `pg%(b%(i))` and color `pc%(b%(i))` at `ba+int(i/8)*44+(iand7)*2` |
 | 2000 | draw (`km=1`) or erase (`km=0`) a rounded box with its top-left corner at `ka`, `kw` by `kh` cells: four corners, then the top and bottom lines, then the sides one screen row (22) at a time |
 | 2100 | the cursor: set up a 3x3 box around the piece at `cr`, `cc` (top-left one row up and one column left: −23) and call 2000 |
-| 2200 | swap the piece at `cr`,`cc` with its neighbour at `r`,`c`: erase the cursor; grow the box over both cells (its top-left is the cell with the smaller index `m`, which is the upper or left one; `kw=3-2*(r=cr)` makes it 5 wide for a swap in the same row, `kh` likewise 5 high for one in the same column); pause; swap the two values in `b%()` through `t` and redraw both cells; pause; erase the grown box; draw the cursor at the new spot. Every swap is allowed for now (no match check yet). |
+| 2200 | swap the piece at `cr`,`cc` with its neighbour at `r`,`c`: erase the cursor; grow the box over both cells (its top-left is the cell with the smaller index `m`, which is the upper or left one; `kw=3-2*(r=cr)` makes it 5 wide for a swap in the same row, `kh` likewise 5 high for one in the same column); pause; swap the two values in `b%()` through `t` and redraw both cells; pause; erase the grown box; draw the cursor at the new spot. After the swap, 3000 checks around both cells (`x`, `y`); with no match (`mn=0`) the pieces swap back and the cursor stays. With a match, the marked cells show reversed (3200). |
+| 2400 | swap the values of cells `x` and `y` through `t` and redraw both |
 | 2900 | pause `n` jiffies (1/60 s), using `ti`, so the speed doesn't depend on what else runs |
+| 3000 | check the windows around cell `i`: across, the windows starting at columns `lo`-`hi` (2 left of `i`'s column to its column, kept within 0-5); down, likewise for rows. A window of three equal types (`and7`) goes to 3100. |
+| 3100 | mark the window `s`, `s+j`, `s+2j` (`j` 1 across, 8 down): each cell not yet marked gets `or8` and goes on `mk%` |
+| 3200 | temporary, until clearing exists: show the listed cells reversed, pause 30 jiffies, unmark them and redraw |
 
 ## Variables
 
@@ -141,6 +154,11 @@ Screen codes, not PETSCII: a `poke` into screen RAM takes the screen code, and g
 | `x`, `y` | the two cells' indexes (0-63) while swapping |
 | `m` | the smaller of `x` and `y`: the grown box's top-left cell |
 | `n` | pause length in jiffies (5 for each swap pause, about 1/12 s; tuned by eye 2026-11-08, first tried 10) |
+| `mk%()`, `mn` | the matched list and its length |
+| `u`, `v` | column and row of cell `i`, inside 3000 (not `c`/`r`, which the swap still needs) |
+| `lo`, `hi` | first and last window start, inside 3000 |
+| `s` | a window's first cell; `j` its step (1 across, 8 down) |
+| `k`, `q` | loop counter and cell inside 3100 and 3200 |
 | `e` | the box's bottom-left screen address, inside 2000 |
 | `i` | loop counter (board loops) |
 | `j` | loop counter (init and the box, so the box can run inside an `i` loop later) |
@@ -163,3 +181,4 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | 2026-11-08 | 515 | the cursor: box routine and WASD moves, with long `rem`s (PRG 2751 bytes; 1014 without the 30 `rem` lines, so the comments took 1737) |
 | 2026-11-08 | 2022 | the same, with one short `rem` per routine (PRG 1244 bytes); explanations live here instead |
 | 2026-11-08 | 1524 | the swap animation, every swap allowed (PRG 1707 bytes) |
+| 2026-11-08 | 635 | the match check around swapped cells, swap back without a match (PRG 2461 bytes; the 16 `rem`s take 527 of it) |
