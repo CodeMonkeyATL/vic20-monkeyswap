@@ -27,7 +27,10 @@ $prg = Join-Path $prgs $PrgName
 # warnings only; the build goes ahead either way
 & (Join-Path $PSScriptRoot 'check-basic.ps1') -BasFile $BasFile
 
-& petcat.exe -w2 -l $machine.LoadAddress -o $prg $BasFile
+# the PRG is built from a copy without rems (they cost memory; the source keeps them), as CI does
+$stripped = Join-Path ([System.IO.Path]::GetTempPath()) ("{0}.stripped.bas" -f $PrgName)
+& (Join-Path $PSScriptRoot 'strip-rems.ps1') -BasFile $BasFile -OutFile $stripped
+& petcat.exe -w2 -l $machine.LoadAddress -o $prg $stripped
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }

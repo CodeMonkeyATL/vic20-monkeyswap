@@ -83,7 +83,10 @@ jobs:
             esac
 
             echo "Building $f → $outdir/${base}"
-            petcat $flags -o "$outdir/${base}" "$f"
+            # without rems, like the local build (buildtools/strip-rems.ps1), so both stay byte-identical
+            stripped="$RUNNER_TEMP/${base}.stripped.bas"
+            pwsh -NoProfile -File buildtools/strip-rems.ps1 -BasFile "$f" -OutFile "$stripped"
+            petcat $flags -o "$outdir/${base}" "$stripped"
           done
 
       - name: commit prg files
