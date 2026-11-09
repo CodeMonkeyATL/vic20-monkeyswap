@@ -1,14 +1,14 @@
-100 poke198,0:w=0:a=0:p=0:z=0:poke36879,8:t=rnd(-ti):dimpg%(6),pc%(6),kg%(1,5):rem init; hot loop variables first (found faster)
+100 poke198,0:poke36879,8:t=rnd(-ti):dimpg%(6),pc%(6),kg%(1,5):rem init
 180 fori=0to6:readpg%(i),pc%(i):next:data65,7,83,2,88,5,90,3,81,4,87,1,32,1:rem pieces 0-5, 6=empty: code, color
 194 data85,73,74,75,64,93:forj=0to5:kg%(0,j)=32:readkg%(1,j):next:ba=7771:co=30720:rem box: 4 corners, -, |
 212 bb=919:bm=983:bh=1012:print"{clr}{wht}{down}{down}":forj=1to17:print"                   ":next:rem board, match list, holes (cassette buffer); board area white
-230 gosub1000:gosub1100:ho=rnd(1)*128:rem ho: random first trial
-250 ty=1:tx=1:gosub4100:print"{wht}pts";:gosub3800:cr=3:cc=3:sx=8152:pokesx+co,7:rem sx: spinner
+230 gosub1000:gosub1100:ho=rnd(1)*128:sx=8152:pokesx+co,7:rem ho: random first trial; sx: spinner
+250 gosub3800:cr=3:cc=3
 
 300 km=1:gosub2100:rem play: wasd moves, shift+wasd swaps
 330 poke198,0:kt=ti:rd=0
 340 geta$:ifa$=""thengosub5000:goto340
-345 pokesx,32:kt=ti:ifa$="q"thenifp$="q"thenpoke36879,27:print"{clr}{blu}";:end:rem qq quits
+345 pokesx,32:kt=ti:ifa$="q"thenifp$="q"then5540:rem qq quits
 347 p$=a$
 350 sw=asc(a$)>127:ifswthena$=chr$(asc(a$)and127)
 360 ifa$="w"ora$="a"ora$="s"ora$="d"then390
@@ -28,15 +28,15 @@
 1200 p=ba+int(i/8)*44+(iand7)*2:w=peek(bb+i):pokep,pg%(wand7)-128*(w>7):rem draw cell i; marked (>7) reversed
 1230 pokep+co,pc%(wand7):return
 
-2000 e=ka+(kh-1)*22:pokeka,kg%(km,0):pokeka+kw-1,kg%(km,1):rem box at ka, kw x kh; km=1 draw, 0 erase
-2030 pokee,kg%(km,2):pokee+kw-1,kg%(km,3)
-2050 forj=1tokw-2:pokeka+j,kg%(km,4):pokee+j,kg%(km,4):next
+2000 w=ka+(kh-1)*22:pokeka,kg%(km,0):pokeka+kw-1,kg%(km,1):rem box at ka, kw x kh; km=1 draw, 0 erase
+2030 pokew,kg%(km,2):pokew+kw-1,kg%(km,3)
+2050 forj=1tokw-2:pokeka+j,kg%(km,4):pokew+j,kg%(km,4):next
 2070 forj=22to(kh-2)*22step22:pokeka+j,kg%(km,5):pokeka+j+kw-1,kg%(km,5):next:return
 
 2100 ka=ba+cr*44+cc*2-23:kw=3:kh=3:gosub2000:return:rem cursor box at cr,cc
 
-2200 km=0:gosub2100:x=cr*8+cc:y=r*8+c:m=x:ify<xthenm=y:rem swap cr,cc with r,c: grow, swap, shrink
-2240 ka=ba+int(m/8)*44+(mand7)*2-23:kw=3-2*(r=cr):kh=3-2*(c=cc)
+2200 km=0:gosub2100:x=cr*8+cc:y=r*8+c:w=x:ify<xthenw=y:rem swap cr,cc with r,c: grow, swap, shrink
+2240 ka=ba+int(w/8)*44+(wand7)*2-23:kw=3-2*(r=cr):kh=3-2*(c=cc)
 2260 km=1:gosub2000:n=5:gosub2900:gosub2400:gosub2900:mn=0:i=x:gosub3000:i=y:gosub3000
 2280 ifmn=0thengosub2400:r=cr:c=cc:gosub2900
 2290 km=0:gosub2000:cr=r:cc=c:km=1:gosub2100:ifmnthenhm=0:hc=0:ho=rnd(1)*128:gosub3500
@@ -70,7 +70,7 @@
 3325 if(band7)>vthenv=band7
 3327 pokebh+g,(band248)+8+v:next
 3340 f=0:forg=0to7:b=peek(bh+g):if(band120)thengosub3400
-3350 next:iffthenn=3:gosub2900:goto3340
+3350 next:iffthenn=3:gosub2900:gosub5900:goto3340
 3370 return
 
 3400 q=band7:rem column g: drop above its lowest hole; one hole fewer
@@ -88,23 +88,27 @@
 
 3600 ifg<clthencl=g:rem changed column g: widen the range, check its column
 3610 ifg>chthench=g
-3620 l=band7:ifl>lmthenlm=l
-3630 ifl>5thenl=5
-3640 j=8:fors=bb+gtobb+l*8+gstep8:gosub3150:next:return
+3620 q=band7:ifq>lmthenlm=q
+3630 ifq>5thenq=5
+3640 j=8:fors=bb+gtobb+q*8+gstep8:gosub3150:next:return
 
-3800 ty=1:tx=4:gosub4100:print"{yel}"sc;:return:rem show the score
-
+3800 ty=1:tx=1:gosub4100:print"{yel}"sc;:return:rem show the score
 
 4100 poke781,ty:poke782,tx:poke783,0:sys65520:return:rem print position: row ty, column tx
 
 5000 ifhmorti-kt<120thenreturn:rem idle 2 s: try one swap (hc: cell*2+direction); none works: game over
 5010 ifhc>127then5500
-5020 k=(hc+ho)and127:x=int(k/2):d=kand1:y=x+1+7*d:hc=hc+1:fo=0:rem from a random start, wrapping
-5025 pokesx,asc(mid$("{$60}{$6e}{$7d}{$6d}",(hcand3)+1))-32
-5030 if(xand7)+1-d>7ory>63thenreturn:rem off the board
+5020 k=(hc+ho)and127:x=int(k/2):w=kand1:y=x+1+7*w:hc=hc+1:fo=0:gosub5900:rem from a random start, wrapping
+5030 if(xand7)+1-w>7ory>63thenreturn:rem off the board
 5040 ht=1:gosub2400:i=x:gosub3000:i=y:gosub3000:gosub2400:ht=0:iffothenhm=1:pokesx,32
 5050 return
 
-5500 ty=21:tx=6:gosub4100:print"{wht}game over";:poke198,0:rem no move left
+5500 ty=21:tx=6:gosub4100:print"{wht}game over";:gosub5700:poke198,0:rem no move left
 5510 geta$:ifa$=""then5510
-5520 run
+5520 run:rem result written; any key plays again (the launcher posts the result when it next runs)
+5540 poke36879,27:print"{clr}{blu}";:end
+
+5700 poke900,2:poke901,253:poke902,2:poke903,1:v=sc:rem result: game 2, endless, 1 field (pts)
+5710 fori=904to906:pokei,v-256*int(v/256):v=int(v/256):next:return
+
+5900 sp=sp+1:pokesx,asc(mid$("{$60}{$6e}{$7d}{$6d}",(spand3)+1))-32:return:rem spinner: one step
