@@ -15,7 +15,9 @@ To be written once the game plays.
 
 | Key | Action |
 |---|---|
-| `q` | quit |
+| `w` `a` `s` `d` | move the cursor |
+| Shift + `w` `a` `s` `d` | swap the piece under the cursor with its neighbour |
+| `q` | quit (asks first) |
 
 ## screenshots
 
