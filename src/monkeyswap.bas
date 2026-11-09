@@ -1,4 +1,4 @@
-100 poke198,0:rem init
+100 poke198,0:w=0:a=0:p=0:z=0:rem init; hot loop variables first (found faster)
 130 poke36879,8
 150 t=rnd(-ti)
 170 dimpg%(6),pc%(6),kg%(1,5)
@@ -7,7 +7,7 @@
 194 data85,73,74,75,64,93:rem box: 4 corners, -, |
 196 forj=0to5:kg%(0,j)=32:readkg%(1,j):next
 210 ba=7771:co=30720
-212 bb=919:bm=983:rem board, match list (cassette buffer)
+212 bb=919:bm=983:bh=1012:rem board, match list, holes (cassette buffer)
 220 print"{clr}{wht}{down}{down}":rem board area white
 224 forj=1to17:print"                   ":next
 230 gosub1000
@@ -72,7 +72,7 @@
 2280 ifmn=0thengosub2400:r=cr:c=cc:gosub2900
 2290 km=0:gosub2000
 2300 cr=r:cc=c:km=1:gosub2100
-2305 ifmnthengosub3200
+2305 ifmnthengosub3200:gosub3300
 2310 return
 
 2400 t=peek(bb+x):pokebb+x,peek(bb+y):pokebb+y,t:rem swap cells x,y, redraw
@@ -105,3 +105,20 @@
 3220 n=30:gosub2900
 3230 fork=0tomn-1:i=peek(bm+k):pokebb+i,6:gosub1200:next
 3240 return
+
+3300 forg=0to7:pokebh+g,0:next:rem gravity; bh+g: 128 + holes*8 + lowest hole row
+3320 fork=0tomn-1:i=peek(bm+k):g=iand7:v=int(i/8):b=peek(bh+g)or128
+3325 if(band7)>vthenv=band7
+3327 pokebh+g,(band248)+8+v
+3330 next
+3340 f=0:forg=0to7:b=peek(bh+g):if(band120)thengosub3400
+3350 next
+3360 iffthenn=3:gosub2900:goto3340
+3370 return
+
+3400 q=band7:rem column g: drop above its lowest hole; one hole fewer
+3420 ifpeek(bb+q*8+g)<>6thenq=q-1:goto3420
+3440 a=bb+q*8+g:p=ba+q*44+g*2
+3450 forz=qto1step-1:w=peek(a-8):pokea,w:pokep,pg%(w):pokep+co,pc%(w):a=a-8:p=p-44:next
+3460 w=int(rnd(1)*6):pokea,w:pokep,pg%(w):pokep+co,pc%(w):f=1:pokebh+g,b-8
+3470 return
