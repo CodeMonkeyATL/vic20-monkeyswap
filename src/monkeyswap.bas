@@ -2,16 +2,17 @@
 180 fori=0to6:readpg%(i),pc%(i):next:data65,7,83,2,88,5,90,3,81,4,87,1,32,1:rem pieces 0-5, 6=empty: code, color
 194 data85,73,74,75,64,93:forj=0to5:kg%(0,j)=32:readkg%(1,j):next:ba=7771:co=30720:rem box: 4 corners, -, |
 212 bb=919:bm=983:bh=1012:print"{clr}{wht}{down}{down}":forj=1to17:print"                   ":next:rem board, match list, holes (cassette buffer); board area white
-230 gosub1000:gosub1100
-250 ty=1:tx=1:gosub4100:print"{wht}score";:tx=14:gosub4100:print"lvl";:gosub3800:cr=3:cc=3
+230 gosub1000:gosub1100:ho=rnd(1)*128:rem ho: random first trial
+250 ty=1:tx=1:gosub4100:print"{wht}pts";:gosub3800:cr=3:cc=3:sx=8152:pokesx+co,7:rem sx: spinner
 
 300 km=1:gosub2100:rem play: wasd moves, shift+wasd swaps
-330 poke198,0
-340 geta$:ifa$=""then340
+330 poke198,0:kt=ti:rd=0
+340 geta$:ifa$=""thengosub5000:goto340
+345 pokesx,32:kt=ti:ifa$="q"thenifp$="q"thenpoke36879,27:print"{clr}{blu}";:end:rem qq quits
+347 p$=a$
 350 sw=asc(a$)>127:ifswthena$=chr$(asc(a$)and127)
 360 ifa$="w"ora$="a"ora$="s"ora$="d"then390
-370 ifa$="q"thengosub4000
-380 goto340
+370 goto340
 390 r=cr-(a$="s"andcr<7)+(a$="w"andcr>0):c=cc-(a$="d"andcc<7)+(a$="a"andcc>0)
 420 ifr=crthenifc=ccthen340
 430 ifswthengosub2200:goto330
@@ -38,10 +39,11 @@
 2240 ka=ba+int(m/8)*44+(mand7)*2-23:kw=3-2*(r=cr):kh=3-2*(c=cc)
 2260 km=1:gosub2000:n=5:gosub2900:gosub2400:gosub2900:mn=0:i=x:gosub3000:i=y:gosub3000
 2280 ifmn=0thengosub2400:r=cr:c=cc:gosub2900
-2290 km=0:gosub2000:cr=r:cc=c:km=1:gosub2100:ifmnthenrd=0:gosub3500
+2290 km=0:gosub2000:cr=r:cc=c:km=1:gosub2100:ifmnthenhm=0:hc=0:ho=rnd(1)*128:gosub3500
 2310 return
 
-2400 t=peek(bb+x):pokebb+x,peek(bb+y):pokebb+y,t:i=x:gosub1200:i=y:gosub1200:return:rem swap cells x,y, redraw
+2400 t=peek(bb+x):pokebb+x,peek(bb+y):pokebb+y,t:ifhtthenreturn:rem swap cells x,y, redraw (not in a trial)
+2410 i=x:gosub1200:i=y:gosub1200:return
 
 2900 t=ti+n:rem pause n jiffies
 2920 ifti<tthen2920
@@ -53,7 +55,8 @@
 3080 hi=v:ifhi>5thenhi=5
 3090 j=8:fors=bb+lo*8+utobb+hi*8+ustep8:gosub3150:next:return
 
-3100 fork=0to2:q=s+k*j:ifpeek(q)<8thenifmn<29thenpokeq,peek(q)or8:pokebm+mn,q-bb:mn=mn+1:rem mark addresses s,s+j,s+2j; list new ones (max 29)
+3100 ifhtthenfo=1:return:rem a trial only needs to know
+3110 fork=0to2:q=s+k*j:ifpeek(q)<8thenifmn<29thenpokeq,peek(q)or8:pokebm+mn,q-bb:mn=mn+1:rem mark addresses s,s+j,s+2j; list new ones (max 29)
 3130 next:return
 
 3150 t=peek(s)and7:ift=(peek(s+j)and7)andt=(peek(s+2*j)and7)thengosub3100:rem window: a run?
@@ -89,11 +92,19 @@
 3630 ifl>5thenl=5
 3640 j=8:fors=bb+gtobb+l*8+gstep8:gosub3150:next:return
 
-3800 ty=1:tx=6:gosub4100:print"{yel}"sc;:tx=17:gosub4100:print"{yel}"int(sc/500)+1;:return:rem show score, level
+3800 ty=1:tx=4:gosub4100:print"{yel}"sc;:return:rem show the score
 
-4000 ty=21:tx=6:gosub4100:print"{wht}quit? y/n";:poke198,0:rem quit? only y ends
-4010 geta$:ifa$=""then4010
-4020 ifa$="y"thenpoke36879,27:print"{clr}{blu}";:end
-4030 gosub4100:print"         ";:return
 
 4100 poke781,ty:poke782,tx:poke783,0:sys65520:return:rem print position: row ty, column tx
+
+5000 ifhmorti-kt<120thenreturn:rem idle 2 s: try one swap (hc: cell*2+direction); none works: game over
+5010 ifhc>127then5500
+5020 k=(hc+ho)and127:x=int(k/2):d=kand1:y=x+1+7*d:hc=hc+1:fo=0:rem from a random start, wrapping
+5025 pokesx,asc(mid$("{$60}{$6e}{$7d}{$6d}",(hcand3)+1))-32
+5030 if(xand7)+1-d>7ory>63thenreturn:rem off the board
+5040 ht=1:gosub2400:i=x:gosub3000:i=y:gosub3000:gosub2400:ht=0:iffothenhm=1:pokesx,32
+5050 return
+
+5500 ty=21:tx=6:gosub4100:print"{wht}game over";:poke198,0:rem no move left
+5510 geta$:ifa$=""then5510
+5520 run

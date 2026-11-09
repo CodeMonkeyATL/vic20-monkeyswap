@@ -8,6 +8,11 @@ Known issues and ideas. Nothing here is scheduled; the user picks what's worth d
 
 ## Later
 
+- **Hint:** the no-moves check finds a working swap (`x`, `y` when `hm` is set); after a long idle, show it (for example, flash the piece). A few dozen bytes; only if memory allows.
+- **Sounds:** a lift for the swap (as RingSort's), a merge sound rising with each cascade round (as 2up11's), a game-over tone. Probably no memory left on an unexpanded VIC.
+- **Title and attribution** on screen, if memory allows (the README has them).
+- **A faster no-moves check:** the pattern version (pairs and gaps) took 510 bytes; only with more memory.
+
 - Special pieces: match 4 clears a row or column, an L or T shape clears a 3x3 area, match 5 clears one color. A reversed glyph could mark one.
 - Custom fruit characters, as memory allows (see "Pieces" in `design.md`).
 - A difficulty (piece types 5/6/7, fewer moves), as extra leaderboard variants.
