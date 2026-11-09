@@ -1,9 +1,9 @@
 100 poke198,0:rem init
 130 poke36879,8
 150 t=rnd(-ti)
-170 dimpg%(5),pc%(5),kg%(1,5)
-180 fori=0to5:readpg%(i),pc%(i):next
-190 data65,7,83,2,88,5,90,3,81,4,87,1:rem pieces: screen code, color
+170 dimpg%(6),pc%(6),kg%(1,5)
+180 fori=0to6:readpg%(i),pc%(i):next
+190 data65,7,83,2,88,5,90,3,81,4,87,1,32,1:rem pieces 0-5, 6=empty: code, color
 194 data85,73,74,75,64,93:rem box: 4 corners, -, |
 196 forj=0to5:kg%(0,j)=32:readkg%(1,j):next
 210 ba=7771:co=30720
@@ -101,7 +101,7 @@
 3130 next
 3140 return
 
-3200 fork=0tomn-1:i=peek(bm+k):gosub1200:next:rem show marks, unmark (until clearing)
+3200 fork=0tomn-1:i=peek(bm+k):gosub1200:next:rem flash marks, then clear to empty
 3220 n=30:gosub2900
-3230 fork=0tomn-1:i=peek(bm+k):pokebb+i,peek(bb+i)and7:gosub1200:next
+3230 fork=0tomn-1:i=peek(bm+k):pokebb+i,6:gosub1200:next
 3240 return
