@@ -12,6 +12,7 @@
 224 forj=1to17:print"                   ":next
 230 gosub1000
 240 gosub1100
+250 ty=1:tx=1:gosub4100:print"{wht}score";:tx=14:gosub4100:print"lvl";:gosub3800
 260 cr=3:cc=3
 
 300 km=1:gosub2100:rem play: wasd moves, shift+wasd swaps
@@ -73,7 +74,7 @@
 2280 ifmn=0thengosub2400:r=cr:c=cc:gosub2900
 2290 km=0:gosub2000
 2300 cr=r:cc=c:km=1:gosub2100
-2305 ifmnthengosub3500
+2305 ifmnthenrd=0:gosub3500
 2310 return
 
 2400 t=peek(bb+x):pokebb+x,peek(bb+y):pokebb+y,t:rem swap cells x,y, redraw
@@ -123,7 +124,7 @@
 3460 w=int(rnd(1)*6):pokea,w:pokep,pg%(w):pokep+co,pc%(w):f=1:pokebh+g,b-8
 3470 return
 
-3500 gosub3200:gosub3300:rem cascade: clear, fall, check what changed; repeat
+3500 rd=rd+1:sc=sc+mn*10*rd:gosub3800:gosub3200:gosub3300:rem cascade round rd: score, clear, fall, check
 3510 mn=0:cl=8:ch=-1:lm=-1
 3520 forg=0to7:b=peek(bh+g):ifb>127thengosub3600
 3530 next
@@ -139,6 +140,9 @@
 3630 ifl>5thenl=5
 3640 j=8:fors=bb+gtobb+l*8+gstep8:gosub3150:next
 3650 return
+
+3800 ty=1:tx=6:gosub4100:print"{yel}"sc;:tx=17:gosub4100:print"{yel}"int(sc/500)+1;:rem show score, level
+3810 return
 
 4000 ty=21:tx=6:gosub4100:print"{wht}quit? y/n";:poke198,0:rem quit? only y ends
 4010 geta$:ifa$=""then4010

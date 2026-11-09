@@ -28,7 +28,7 @@ MonkeySwap, a match-3 puzzle game for an **unexpanded VIC-20**, written in Commo
 
 ## Source files (`src/`)
 
-- `monkeyswap.bas`: the game. So far it fills an 8x8 board without runs of three, draws it, moves a rounded box cursor with WASD and swaps pieces with Shift+WASD; a swap that makes no run of three swaps back; matched pieces flash and are cleared, the columns fall a row at a time with new pieces dropping in from the top, and new runs cascade until none are left; `q` asks to quit, other keys are ignored.
+- `monkeyswap.bas`: the game. So far it fills an 8x8 board without runs of three, draws it, moves a rounded box cursor with WASD and swaps pieces with Shift+WASD; a swap that makes no run of three swaps back; matched pieces flash and are cleared, the columns fall a row at a time with new pieces dropping in from the top, and new runs cascade until none are left, scoring 10 per piece times the cascade round, with score and level shown above the board; `q` asks to quit, other keys are ignored.
 
 ## Docs
 
