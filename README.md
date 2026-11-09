@@ -17,7 +17,7 @@ To be written once the game plays.
 |---|---|
 | `w` `a` `s` `d` | move the cursor |
 | Shift + `w` `a` `s` `d` | swap the piece under the cursor with its neighbour |
-| `q` | quit (asks first) |
+| `q` `q` | quit (`q` twice in a row) |
 
 ## screenshots
 
