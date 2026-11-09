@@ -126,11 +126,12 @@ Only cells that just changed are checked, never the whole board: a full scan too
 **Changed cells aren't stored:** a swap has exactly two (`x`, `y`); after gravity, every cell from the top of a column down to its lowest hole has changed, and the hole bytes (`bh`) record that row per column. Only the matched cells are a list (the match list at `bm`).
 
 ## Routines
+The source is tightened (2026-11-08): statements are joined onto as few lines as the rules allow (a jump target starts its line, nothing follows an `if` or a `goto`/`return`, 88 characters as stripped). Each line's `rem` sits at its end. Line numbers below are the routines' first lines.
 
 | Lines | Routine |
 |---|---|
 | 100 | init: empty the keyboard buffer, create the gravity loop's variables first (`w`, `a`, `p`, `z`: BASIC finds variables in creation order, so early ones are found faster), black screen, seed `rnd`, read the piece and box tables, clear the screen and make the board area white, fill and draw the board, print the score labels (250) and values, put the cursor at row 3, column 3 |
-| 300 | play: show the cursor, empty the buffer (autostart's stray `z` and keys typed during setup, which arrive after the `poke198,0` at 110), then wait for keys. `w`/`a`/`s`/`d` move the cursor one cell (erase, move, draw); the new row and column use comparisons as numbers (−1 when true): `r=cr-(a$="s"andcr<7)+(a$="w"andcr>0)`, so at an edge nothing changes and nothing is redrawn. With Shift held (`sw`, set when `asc(a$)>127`; `and127` turns the key back into the plain letter), the same direction swaps instead (2200), and the buffer is emptied afterwards (back to 330). `q` (or Shift+Q) asks to quit (4000); every other key is ignored. Typed-ahead moves are kept, so quick taps all count. |
+| 300 | play: show the cursor, empty the buffer (autostart's stray `z` and keys typed during setup, which arrive after the `poke198,0` at the start of init), then wait for keys. `w`/`a`/`s`/`d` move the cursor one cell (erase, move, draw); the new row and column use comparisons as numbers (−1 when true): `r=cr-(a$="s"andcr<7)+(a$="w"andcr>0)`, so at an edge nothing changes and nothing is redrawn. With Shift held (`sw`, set when `asc(a$)>127`; `and127` turns the key back into the plain letter), the same direction swaps instead (2200), and the buffer is emptied afterwards (back to 330). `q` (or Shift+Q) asks to quit (4000); every other key is ignored. Typed-ahead moves are kept, so quick taps all count. |
 | 1000 | fill the board with random pieces 0-5, without runs of three: a piece (`t`) that would make three with the two cells to its left (from column 2) or the two above (from row 2) is drawn again. Nested `if`s guard the edges, since `and` doesn't short-circuit and `bb+i-2` would read the previous row (or before the board). |
 | 1100 | draw the board: 1200 for each of the 64 cells |
 | 1200 | draw cell `i` by poking screen and color RAM: the cell's byte in `w` (`peek(bb+i)`), then glyph `pg%(wand7)` (+128, reversed, when marked) and color `pc%(wand7)` at `ba+int(i/8)*44+(iand7)*2` |
@@ -213,3 +214,4 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | 2026-11-08 | 621 | the cascade loop, and the row-0 fix (PRG 2657 bytes; measured after a swap that may not have matched, so about 28 less once the cascade's variables exist) |
 | 2026-11-08 | 422 | keys: `q` with confirmation, other keys ignored, print-position routine (PRG 2842 bytes) |
 | 2026-11-08 | 191 | score and level on row 1 (PRG 2996 bytes; measured after a matching move) |
+| 2026-11-08 | ~440 | tightened: 134 lines joined into 79 (PRG 2776 bytes, 220 less); 468 measured before any match, about 28 less once the cascade's variables exist |
