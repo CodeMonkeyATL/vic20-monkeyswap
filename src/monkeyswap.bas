@@ -72,7 +72,7 @@
 2280 ifmn=0thengosub2400:r=cr:c=cc:gosub2900
 2290 km=0:gosub2000
 2300 cr=r:cc=c:km=1:gosub2100
-2305 ifmnthengosub3200:gosub3300
+2305 ifmnthengosub3500
 2310 return
 
 2400 t=peek(bb+x):pokebb+x,peek(bb+y):pokebb+y,t:rem swap cells x,y, redraw
@@ -86,20 +86,19 @@
 3000 u=iand7:v=int(i/8):rem check windows around cell i
 3020 lo=u-2:iflo<0thenlo=0
 3030 hi=u:ifhi>5thenhi=5
-3040 fors=bb+i-u+lotobb+i-u+hi
-3050 t=peek(s)and7:ift=(peek(s+1)and7)andt=(peek(s+2)and7)thenj=1:gosub3100
-3060 next
+3040 j=1:fors=bb+i-u+lotobb+i-u+hi:gosub3150:next
 3070 lo=v-2:iflo<0thenlo=0
 3080 hi=v:ifhi>5thenhi=5
-3090 fors=bb+lo*8+utobb+hi*8+ustep8
-3092 t=peek(s)and7:ift=(peek(s+8)and7)andt=(peek(s+16)and7)thenj=8:gosub3100
-3094 next
+3090 j=8:fors=bb+lo*8+utobb+hi*8+ustep8:gosub3150:next
 3096 return
 
-3100 fork=0to2:q=s+k*j:rem mark addresses s,s+j,s+2j; list new ones
-3120 ifpeek(q)<8thenpokeq,peek(q)or8:pokebm+mn,q-bb:mn=mn+1
+3100 fork=0to2:q=s+k*j:rem mark addresses s,s+j,s+2j; list new ones (max 29)
+3120 ifpeek(q)<8thenifmn<29thenpokeq,peek(q)or8:pokebm+mn,q-bb:mn=mn+1
 3130 next
 3140 return
+
+3150 t=peek(s)and7:ift=(peek(s+j)and7)andt=(peek(s+2*j)and7)thengosub3100:rem window: a run?
+3160 return
 
 3200 fork=0tomn-1:i=peek(bm+k):gosub1200:next:rem flash marks, then clear to empty
 3220 n=30:gosub2900
@@ -118,7 +117,24 @@
 
 3400 q=band7:rem column g: drop above its lowest hole; one hole fewer
 3420 ifpeek(bb+q*8+g)<>6thenq=q-1:goto3420
-3440 a=bb+q*8+g:p=ba+q*44+g*2
+3440 a=bb+q*8+g:p=ba+q*44+g*2:ifq=0then3460:rem a for loop always runs once
 3450 forz=qto1step-1:w=peek(a-8):pokea,w:pokep,pg%(w):pokep+co,pc%(w):a=a-8:p=p-44:next
 3460 w=int(rnd(1)*6):pokea,w:pokep,pg%(w):pokep+co,pc%(w):f=1:pokebh+g,b-8
 3470 return
+
+3500 gosub3200:gosub3300:rem cascade: clear, fall, check what changed; repeat
+3510 mn=0:cl=8:ch=-1:lm=-1
+3520 forg=0to7:b=peek(bh+g):ifb>127thengosub3600
+3530 next
+3540 lo=cl-2:iflo<0thenlo=0
+3550 hi=ch:ifhi>5thenhi=5
+3560 j=1:forr=0tolm:fors=bb+r*8+lotobb+r*8+hi:gosub3150:next:next
+3570 ifmnthen3500
+3580 return
+
+3600 ifg<clthencl=g:rem changed column g: widen the range, check its column
+3610 ifg>chthench=g
+3620 l=band7:ifl>lmthenlm=l
+3630 ifl>5thenl=5
+3640 j=8:fors=bb+gtobb+l*8+gstep8:gosub3150:next
+3650 return
