@@ -27,7 +27,7 @@ No special pieces (line clearers, bombs) in the first version; add them once the
 
 Building one style first risks leaving no memory for the other, so: measure `fre(0)` after every step, estimate what levels needs once the core is done and keep that much free, and keep the style in a variable from the start wherever the code differs.
 
-**Initial runs:** the fill (1000) avoids them; the draw (1100) only shows `b%()` and never changes it. The board is the game state, and the screen shows it, so redraws, the match scan and seeded levels all see the same board.
+**Initial runs:** the fill (1000) avoids them; the draw (1100) only shows the board and never changes it. The board is the game state, and the screen shows it, so redraws, the match scan and seeded levels all see the same board.
 
 **L, T and + shapes** aren't shapes of their own: a horizontal run of 3+ and a vertical run of 3+ that share a piece (at least 5 pieces, 3 wide and 3 tall). The match scan marks every piece in any run of 3+ and clears all marked pieces together, which handles crossing runs without shape detection. A special piece for these later only needs to test "marked by both a horizontal and a vertical run".
 
@@ -94,7 +94,7 @@ The top-left piece is at screen address 7680 + 4×22 + 3 = 7771 (`ba`). Each boa
 
 ## Data model
 
-- `b%(63)`: the board, one element per cell, holding the piece type 0-5. Cell i is board row `int(i/8)`, column `iand7`; so i = r×8 + c. An integer array: 2 bytes per element instead of 5. **Bit layout:** bits 0-2 hold the piece type (`b%(i)and7`), bit 3 (+8) is the match mark (`b%(i)>7` means marked; `b%(i)=b%(i)or8` marks). A mark only exists between a check and the clearing; the board holds none between moves.
+- **The board: 64 bytes in the cassette buffer at 919-982** (`bb`=919), one byte per cell: cell i is `peek(bb+i)`, set with `pokebb+i,…`. Cell i is board row `int(i/8)`, column `iand7`; so i = r×8 + c. **Bit layout:** bits 0-2 hold the piece type (`and7`), bit 3 (+8) is the match mark (`>7` means marked; `or8` marks). A mark only exists between a check and the clearing; the board holds none between moves. It moved out of an integer array `b%(63)` (2026-11-08): an array element always takes 2 bytes, and the array cost 135 bytes of BASIC memory; the buffer costs none.
 - `pg%(5)`, `pc%(5)`: each piece type's screen code (for `poke`) and color, read from `data` at init:
 
 | Type | Glyph | Screen code (PETSCII) | Color |
@@ -108,7 +108,8 @@ The top-left piece is at screen address 7680 + 4×22 + 3 = 7771 (`ba`). Each boa
 
 Screen codes, not PETSCII: a `poke` into screen RAM takes the screen code, and graphics glyphs 96-127 are screen codes 64-95. Purple goes on the filled ball, which has the most pixels, and white on the hollow circle; both were the hardest to see on black (2026-11-08). The colors are a first pick, to judge on the real board.
 
-- `mk%(35)`: the matched list, the cells marked in the current round, `mn` long. The mark bit keeps a cell from being listed twice (crossing runs share a cell). A cross of two five-runs is 9 cells; 36 leaves room for cascades.
+- **The match list: up to 37 bytes in the cassette buffer at 983-1019** (`bm`=983): the cells marked in the current round, `mn` long, each a cell number 0-63. The mark bit keeps a cell from being listed twice (crossing runs share a cell). A cross of two five-runs is 9 cells. Moved out of `mk%(35)` with the board.
+- **Why the cassette buffer is safe:** 828-1019 is RAM only tape I/O uses, and a disk `LOAD` leaves it alone. The CodeMonkeyATL launcher's contract (`vic20-launcher/docs/design.md`, "The cassette buffer") uses 828-918: player and launcher location (read at start and by `l`/quit) and the result (written at game over). 919-1019 is unused there, so the board and list don't touch it, and the board isn't needed after game over anyway. The contract doesn't reserve 919-1019 yet (see `todo.md`).
 - `kg%(1,5)`: the box glyphs, as screen codes. Row 1 draws: `╭` 85, `╮` 73, `╰` 74, `╯` 75, `─` 64, `│` 93 (PETSCII 117, 105, 106, 107, 96, 125). Row 0 is all spaces (32) and erases. The box routine pokes `kg%(km,…)`, so the mode `km` picks the row and one routine both draws and erases.
 - The cursor is kept as a board row and column (`cr`, `cc`, 0-7), not as a screen address: the edge checks and the swap need the row and column, and the address is computed from them.
 
@@ -118,7 +119,7 @@ Only cells that just changed are checked, never the whole board: a full scan too
 
 **Why the windows around each changed cell find every run, whole:** the board holds no run of 3 between moves. After a swap, every new run contains a moved piece, and at most 2 matching pieces sit on either side of it (3 would have been a run before), so the 3 windows across and 3 down that contain the piece cover the whole run, five-wide included. After gravity and refills (later steps), a run can be longer and mix changed and unchanged pieces, but unchanged pieces still can't have 3 in a row among themselves, so every unchanged piece in a run is within 2 cells of a changed one: checking around every changed cell covers every cell of every run. Overlapping windows mark a cell once (the mark bit).
 
-**Changed cells aren't stored:** a swap has exactly two (`x`, `y`); gravity will have known ranges per column (every cell from the top down to the lowest cleared one). Only the matched cells are a list (`mk%`).
+**Changed cells aren't stored:** a swap has exactly two (`x`, `y`); gravity will have known ranges per column (every cell from the top down to the lowest cleared one). Only the matched cells are a list (the match list at `bm`).
 
 ## Routines
 
@@ -126,23 +127,24 @@ Only cells that just changed are checked, never the whole board: a full scan too
 |---|---|
 | 100 | init: empty the keyboard buffer, black screen, seed `rnd`, read the piece and box tables, clear the screen and make the board area white, fill and draw the board, put the cursor at row 3, column 3 |
 | 300 | play: show the cursor, empty the buffer (autostart's stray `z` and keys typed during setup, which arrive after the `poke198,0` at 110), then wait for keys. `w`/`a`/`s`/`d` move the cursor one cell (erase, move, draw); the new row and column use comparisons as numbers (−1 when true): `r=cr-(a$="s"andcr<7)+(a$="w"andcr>0)`, so at an edge nothing changes and nothing is redrawn. With Shift held (`sw`, set when `asc(a$)>127`; `and127` turns the key back into the plain letter), the same direction swaps instead (2200), and the buffer is emptied afterwards (back to 330). Any other key ends the program (for now). Typed-ahead moves are kept, so quick taps all count. |
-| 1000 | fill the board with random pieces 0-5, without runs of three: a piece (`t`) that would make three with the two cells to its left (from column 2) or the two above (from row 2) is drawn again. Nested `if`s guard the edges, since `and` doesn't short-circuit and `b%(i-2)` would be out of range. |
+| 1000 | fill the board with random pieces 0-5, without runs of three: a piece (`t`) that would make three with the two cells to its left (from column 2) or the two above (from row 2) is drawn again. Nested `if`s guard the edges, since `and` doesn't short-circuit and `bb+i-2` would read the previous row (or before the board). |
 | 1100 | draw the board: 1200 for each of the 64 cells |
-| 1200 | draw cell `i` by poking screen and color RAM: piece glyph `pg%(b%(i))` and color `pc%(b%(i))` at `ba+int(i/8)*44+(iand7)*2` |
+| 1200 | draw cell `i` by poking screen and color RAM: the cell's byte in `w` (`peek(bb+i)`), then glyph `pg%(wand7)` (+128, reversed, when marked) and color `pc%(wand7)` at `ba+int(i/8)*44+(iand7)*2` |
 | 2000 | draw (`km=1`) or erase (`km=0`) a rounded box with its top-left corner at `ka`, `kw` by `kh` cells: four corners, then the top and bottom lines, then the sides one screen row (22) at a time |
 | 2100 | the cursor: set up a 3x3 box around the piece at `cr`, `cc` (top-left one row up and one column left: −23) and call 2000 |
-| 2200 | swap the piece at `cr`,`cc` with its neighbour at `r`,`c`: erase the cursor; grow the box over both cells (its top-left is the cell with the smaller index `m`, which is the upper or left one; `kw=3-2*(r=cr)` makes it 5 wide for a swap in the same row, `kh` likewise 5 high for one in the same column); pause; swap the two values in `b%()` through `t` and redraw both cells; pause; erase the grown box; draw the cursor at the new spot. After the swap, 3000 checks around both cells (`x`, `y`); with no match (`mn=0`) the pieces swap back and the cursor stays. With a match, the marked cells show reversed (3200). |
+| 2200 | swap the piece at `cr`,`cc` with its neighbour at `r`,`c`: erase the cursor; grow the box over both cells (its top-left is the cell with the smaller index `m`, which is the upper or left one; `kw=3-2*(r=cr)` makes it 5 wide for a swap in the same row, `kh` likewise 5 high for one in the same column); pause; swap the two cells' bytes through `t` (2400) and redraw both cells; pause; erase the grown box; draw the cursor at the new spot. After the swap, 3000 checks around both cells (`x`, `y`); with no match (`mn=0`) the pieces swap back and the cursor stays. With a match, the marked cells show reversed (3200). |
 | 2400 | swap the values of cells `x` and `y` through `t` and redraw both |
 | 2900 | pause `n` jiffies (1/60 s), using `ti`, so the speed doesn't depend on what else runs |
 | 3000 | check the windows around cell `i`: across, the windows starting at columns `lo`-`hi` (2 left of `i`'s column to its column, kept within 0-5); down, likewise for rows. A window of three equal types (`and7`) goes to 3100. |
-| 3100 | mark the window `s`, `s+j`, `s+2j` (`j` 1 across, 8 down): each cell not yet marked gets `or8` and goes on `mk%` |
+| 3100 | mark the window at addresses `s`, `s+j`, `s+2j` (`j` 1 across, 8 down): each cell not yet marked gets `or8` and goes on the match list (as `q-bb`, its cell number) |
 | 3200 | temporary, until clearing exists: show the listed cells reversed, pause 30 jiffies, unmark them and redraw |
 
 ## Variables
 
 | Name | Meaning |
 |---|---|
-| `b%()` | the board (see "Data model") |
+| `bb`, `bm` | addresses of the board (919) and the match list (983) in the cassette buffer |
+| `w` | the cell's byte while drawing (1200) |
 | `pg%()`, `pc%()` | piece glyph (screen code) and color, by type |
 | `ba` | screen address of the top-left piece (7771) |
 | `co` | color RAM offset from screen RAM (30720) |
@@ -154,10 +156,10 @@ Only cells that just changed are checked, never the whole board: a full scan too
 | `x`, `y` | the two cells' indexes (0-63) while swapping |
 | `m` | the smaller of `x` and `y`: the grown box's top-left cell |
 | `n` | pause length in jiffies (5 for each swap pause, about 1/12 s; tuned by eye 2026-11-08, first tried 10) |
-| `mk%()`, `mn` | the matched list and its length |
+| `mn` | the match list's length |
 | `u`, `v` | column and row of cell `i`, inside 3000 (not `c`/`r`, which the swap still needs) |
 | `lo`, `hi` | first and last window start, inside 3000 |
-| `s` | a window's first cell; `j` its step (1 across, 8 down) |
+| `s` | a window's first cell, as a buffer address (`bb+…`, saving an addition per `peek`); `j` its step (1 across, 8 down) |
 | `k`, `q` | loop counter and cell inside 3100 and 3200 |
 | `e` | the box's bottom-left screen address, inside 2000 |
 | `i` | loop counter (board loops) |
@@ -183,3 +185,4 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | 2026-11-08 | 1524 | the swap animation, every swap allowed (PRG 1707 bytes) |
 | 2026-11-08 | 635 | the match check around swapped cells, swap back without a match (PRG 2461 bytes; the 16 `rem`s take 527 of it) |
 | 2026-11-08 | 1176 | the same, built without `rem`s (`strip-rems.ps1`, from `template`): PRG 1934 bytes. From here on, measured after one swap, so the swap's variables exist. |
+| 2026-11-08 | 1331 | the board and match list in the cassette buffer instead of `b%()`/`mk%()`, after a swap (PRG 1958 bytes) |

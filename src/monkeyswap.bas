@@ -1,12 +1,13 @@
 100 poke198,0:rem init
 130 poke36879,8
 150 t=rnd(-ti)
-170 dimb%(63),pg%(5),pc%(5),kg%(1,5),mk%(35)
+170 dimpg%(5),pc%(5),kg%(1,5)
 180 fori=0to5:readpg%(i),pc%(i):next
 190 data65,7,83,2,88,5,90,3,81,4,87,1:rem pieces: screen code, color
 194 data85,73,74,75,64,93:rem box: 4 corners, -, |
 196 forj=0to5:kg%(0,j)=32:readkg%(1,j):next
 210 ba=7771:co=30720
+212 bb=919:bm=983:rem board, match list (cassette buffer)
 220 print"{clr}{wht}{down}{down}":rem board area white
 224 forj=1to17:print"                   ":next
 230 gosub1000
@@ -31,9 +32,9 @@
 
 1000 fori=0to63:rem fill, no runs of 3
 1020 t=int(rnd(1)*6)
-1040 if(iand7)>1thenift=b%(i-1)andt=b%(i-2)then1020
-1060 ifi>15thenift=b%(i-8)andt=b%(i-16)then1020
-1070 b%(i)=t
+1040 if(iand7)>1thenift=peek(bb+i-1)andt=peek(bb+i-2)then1020
+1060 ifi>15thenift=peek(bb+i-8)andt=peek(bb+i-16)then1020
+1070 pokebb+i,t
 1080 next
 1090 return
 
@@ -42,9 +43,10 @@
 1130 next
 1140 return
 
-1200 p=ba+int(i/8)*44+(iand7)*2:rem draw cell i; marked (b%>7) reversed
-1220 pokep,pg%(b%(i)and7)-128*(b%(i)>7)
-1230 pokep+co,pc%(b%(i)and7)
+1200 p=ba+int(i/8)*44+(iand7)*2:rem draw cell i; marked (>7) reversed
+1210 w=peek(bb+i)
+1220 pokep,pg%(wand7)-128*(w>7)
+1230 pokep+co,pc%(wand7)
 1240 return
 
 2000 e=ka+(kh-1)*22:rem box at ka, kw x kh; km=1 draw, 0 erase
@@ -73,7 +75,7 @@
 2305 ifmnthengosub3200
 2310 return
 
-2400 t=b%(x):b%(x)=b%(y):b%(y)=t:rem swap cells x,y and redraw them
+2400 t=peek(bb+x):pokebb+x,peek(bb+y):pokebb+y,t:rem swap cells x,y, redraw
 2420 i=x:gosub1200:i=y:gosub1200
 2430 return
 
@@ -84,22 +86,22 @@
 3000 u=iand7:v=int(i/8):rem check windows around cell i
 3020 lo=u-2:iflo<0thenlo=0
 3030 hi=u:ifhi>5thenhi=5
-3040 fors=i-u+lotoi-u+hi
-3050 t=b%(s)and7:ift=(b%(s+1)and7)andt=(b%(s+2)and7)thenj=1:gosub3100
+3040 fors=bb+i-u+lotobb+i-u+hi
+3050 t=peek(s)and7:ift=(peek(s+1)and7)andt=(peek(s+2)and7)thenj=1:gosub3100
 3060 next
 3070 lo=v-2:iflo<0thenlo=0
 3080 hi=v:ifhi>5thenhi=5
-3090 fors=lo*8+utohi*8+ustep8
-3092 t=b%(s)and7:ift=(b%(s+8)and7)andt=(b%(s+16)and7)thenj=8:gosub3100
+3090 fors=bb+lo*8+utobb+hi*8+ustep8
+3092 t=peek(s)and7:ift=(peek(s+8)and7)andt=(peek(s+16)and7)thenj=8:gosub3100
 3094 next
 3096 return
 
-3100 fork=0to2:q=s+k*j:rem mark s,s+j,s+2j; list new ones in mk%
-3120 ifb%(q)<8thenb%(q)=b%(q)or8:mk%(mn)=q:mn=mn+1
+3100 fork=0to2:q=s+k*j:rem mark addresses s,s+j,s+2j; list new ones
+3120 ifpeek(q)<8thenpokeq,peek(q)or8:pokebm+mn,q-bb:mn=mn+1
 3130 next
 3140 return
 
-3200 fork=0tomn-1:i=mk%(k):gosub1200:next:rem show marks, then unmark (until clearing exists)
+3200 fork=0tomn-1:i=peek(bm+k):gosub1200:next:rem show marks, unmark (until clearing)
 3220 n=30:gosub2900
-3230 fork=0tomn-1:i=mk%(k):b%(i)=b%(i)and7:gosub1200:next
+3230 fork=0tomn-1:i=peek(bm+k):pokebb+i,peek(bb+i)and7:gosub1200:next
 3240 return
