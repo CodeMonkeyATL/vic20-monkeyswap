@@ -95,7 +95,7 @@ The top-left piece is at screen address 7680 + 4×22 + 3 = 7771 (`ba`). Each boa
 ## Data model
 
 - **The board: 64 bytes in the cassette buffer at 919-982** (`bb`=919), one byte per cell: cell i is `peek(bb+i)`, set with `pokebb+i,…`. Cell i is board row `int(i/8)`, column `iand7`; so i = r×8 + c. **Bit layout:** bits 0-2 hold the piece type (`and7`), bit 3 (+8) is the match mark (`>7` means marked; `or8` marks). A mark only exists between a check and the clearing; the board holds none between moves. It moved out of an integer array `b%(63)` (2026-11-08): an array element always takes 2 bytes, and the array cost 135 bytes of BASIC memory; the buffer costs none.
-- `pg%(5)`, `pc%(5)`: each piece type's screen code (for `poke`) and color, read from `data` at init:
+- `pg%(6)`, `pc%(6)`: each piece type's screen code (for `poke`) and color, read from `data` at init. Type 6 is an **empty cell**: a space, so the draw routine shows a cleared cell with no special case.
 
 | Type | Glyph | Screen code (PETSCII) | Color |
 |---|---|---|---|
@@ -105,6 +105,7 @@ The top-left piece is at screen address 7680 + 4×22 + 3 = 7771 (`ba`). Each boa
 | 3 | ♦ | 90 (122) | 3 cyan |
 | 4 | ● | 81 (113) | 4 purple |
 | 5 | ○ | 87 (119) | 1 white |
+| 6 | empty | 32 (space) | 1 white |
 
 Screen codes, not PETSCII: a `poke` into screen RAM takes the screen code, and graphics glyphs 96-127 are screen codes 64-95. Purple goes on the filled ball, which has the most pixels, and white on the hollow circle; both were the hardest to see on black (2026-11-08). The colors are a first pick, to judge on the real board.
 
@@ -137,7 +138,7 @@ Only cells that just changed are checked, never the whole board: a full scan too
 | 2900 | pause `n` jiffies (1/60 s), using `ti`, so the speed doesn't depend on what else runs |
 | 3000 | check the windows around cell `i`: across, the windows starting at columns `lo`-`hi` (2 left of `i`'s column to its column, kept within 0-5); down, likewise for rows. A window of three equal types (`and7`) goes to 3100. |
 | 3100 | mark the window at addresses `s`, `s+j`, `s+2j` (`j` 1 across, 8 down): each cell not yet marked gets `or8` and goes on the match list (as `q-bb`, its cell number) |
-| 3200 | temporary, until clearing exists: show the listed cells reversed, pause 30 jiffies, unmark them and redraw |
+| 3200 | clear the matched cells: show them reversed (marked), pause 30 jiffies, then set each to 6 (empty) and redraw it as a space. Until gravity and refills exist (step 8), the holes stay, and three holes in a row can "match" each other (6 = 6 = 6); refilling before any check will end that. |
 
 ## Variables
 
@@ -186,3 +187,4 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | 2026-11-08 | 635 | the match check around swapped cells, swap back without a match (PRG 2461 bytes; the 16 `rem`s take 527 of it) |
 | 2026-11-08 | 1176 | the same, built without `rem`s (`strip-rems.ps1`, from `template`): PRG 1934 bytes. From here on, measured after one swap, so the swap's variables exist. |
 | 2026-11-08 | 1331 | the board and match list in the cassette buffer instead of `b%()`/`mk%()`, after a swap (PRG 1958 bytes) |
+| 2026-11-08 | 1330 | clearing: matched cells become empty (type 6) after the flash (PRG 1958 bytes) |
