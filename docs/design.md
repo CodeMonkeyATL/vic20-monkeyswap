@@ -153,7 +153,7 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 | 4100 | set the print position to row `ty`, column `tx` with the KERNAL's PLOT (`sys65520`, row in 781, column in 782, 783=0 to set); as RingSort's 1000 |
 | 5000 | one trial of the no-moves check, after 2 s idle (`ti-kt>=120`) and until a move is found (`hm`): advance the spinner, pick cell `x` and neighbour `y` (right or down) from `(hc+ho)and127`, skip it if `y` is off the board, swap the bytes, check around both cells in test mode, swap back. Cell 63's last trial done with no move: game over (5500). |
 | 5500 | game over: GAME OVER on row 21, write the result for the launcher (5700), then any key starts a new game (`run`) |
-| 5540 | quit (`qq`): the VIC's normal colors, clear the screen, end |
+| 5540 | quit (`qq`): the VIC's normal colors, clear the screen, end. The game can be resumed from `READY.` (see "Resuming after a quit") |
 | 5700 | the result for the launcher in the cassette buffer: 900 game 2, 901 check 253, 902 variant 2 (endless), 903 one field, 904-906 the score, low byte first |
 | 5900 | one spinner step (`sp`), from the 4-character string `─ ╱ │ ╲` (PETSCII − 32 = screen code) |
 
@@ -228,6 +228,25 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | 2026-11-08 | ~215 | the trial no-moves check with a spinner, `qq` instead of the quit prompt, PTS without a level (PRG 2985; 243 measured before any match) |
 | 2026-11-09 | 36 | the launcher result, spinner during falls, no hot-variable line, no score label, four variables reused (PRG ~3105). **Measured after 30 random keys of play**, so every variable exists; earlier rows were measured soon after a start and overstate what's left (the same build showed 120 after a start and 8 after play, before the reuse). This is the ceiling: adding anything means taking something out. |
 
+
+## Resuming after a quit
+
+After `qq`, everything the game needs is still in memory: the variables (score, cursor, the no-moves check's progress) and the board, which lives in the cassette buffer that `end` doesn't touch. Only the screen was cleared and the colors reset. At `READY.`:
+
+```
+print chr$(147):poke36879,8:p$="":gosub1100:gosub3800:goto300
+```
+
+| Part | Does |
+|---|---|
+| `print chr$(147)` | clears the screen (147 is the clear-screen code) |
+| `poke36879,8` | the black screen and border again |
+| `p$=""` | forgets the last `q`, which would otherwise make the next single `q` quit |
+| `gosub1100` | redraws the board from the cassette buffer |
+| `gosub3800` | reprints the score |
+| `goto300` | draws the cursor and continues the play loop |
+
+The cursor box comes out white without reprinting the board area: clearing the screen leaves color RAM alone, so the gap cells keep the white from the start. `run` or editing a program line clears the variables, after which only the board survives. Tested in xvic (2026-11-09): same board, cursor and score after resuming; a move works; a single `q` doesn't quit.
 
 ## Launcher
 
