@@ -130,7 +130,7 @@ Only cells that just changed are checked, never the whole board: a full scan too
 | Lines | Routine |
 |---|---|
 | 100 | init: empty the keyboard buffer, create the gravity loop's variables first (`w`, `a`, `p`, `z`: BASIC finds variables in creation order, so early ones are found faster), black screen, seed `rnd`, read the piece and box tables, clear the screen and make the board area white, fill and draw the board, put the cursor at row 3, column 3 |
-| 300 | play: show the cursor, empty the buffer (autostart's stray `z` and keys typed during setup, which arrive after the `poke198,0` at 110), then wait for keys. `w`/`a`/`s`/`d` move the cursor one cell (erase, move, draw); the new row and column use comparisons as numbers (−1 when true): `r=cr-(a$="s"andcr<7)+(a$="w"andcr>0)`, so at an edge nothing changes and nothing is redrawn. With Shift held (`sw`, set when `asc(a$)>127`; `and127` turns the key back into the plain letter), the same direction swaps instead (2200), and the buffer is emptied afterwards (back to 330). Any other key ends the program (for now). Typed-ahead moves are kept, so quick taps all count. |
+| 300 | play: show the cursor, empty the buffer (autostart's stray `z` and keys typed during setup, which arrive after the `poke198,0` at 110), then wait for keys. `w`/`a`/`s`/`d` move the cursor one cell (erase, move, draw); the new row and column use comparisons as numbers (−1 when true): `r=cr-(a$="s"andcr<7)+(a$="w"andcr>0)`, so at an edge nothing changes and nothing is redrawn. With Shift held (`sw`, set when `asc(a$)>127`; `and127` turns the key back into the plain letter), the same direction swaps instead (2200), and the buffer is emptied afterwards (back to 330). `q` (or Shift+Q) asks to quit (4000); every other key is ignored. Typed-ahead moves are kept, so quick taps all count. |
 | 1000 | fill the board with random pieces 0-5, without runs of three: a piece (`t`) that would make three with the two cells to its left (from column 2) or the two above (from row 2) is drawn again. Nested `if`s guard the edges, since `and` doesn't short-circuit and `bb+i-2` would read the previous row (or before the board). |
 | 1100 | draw the board: 1200 for each of the 64 cells |
 | 1200 | draw cell `i` by poking screen and color RAM: the cell's byte in `w` (`peek(bb+i)`), then glyph `pg%(wand7)` (+128, reversed, when marked) and color `pc%(wand7)` at `ba+int(i/8)*44+(iand7)*2` |
@@ -147,6 +147,8 @@ Only cells that just changed are checked, never the whole board: a full scan too
 | 3400 | one frame for column `g`: find its lowest hole, searching up from the stored row (contiguous holes keep their lowest hole in place, so this usually succeeds at once); move every piece above it down one row and put a new random piece in row 0, redrawing as it goes; one hole fewer. With the hole in row 0 there's nothing above to move, so 3440 jumps past the loop: **a BASIC V2 `for` loop always runs its body once**, and `forz=0to1step-1` would copy the byte below the board into row 0 and put the new piece outside the board, drawn above it and written into the launcher's result area (found by the user, 2026-11-08). The loop keeps the board address `a` and the screen address `p` and steps them by −8 and −44, instead of calling 1200 per cell (which recomputes the address). |
 | 3500 | the cascade: clear (3200), fall (3300), then check every window touching a changed cell (3600 for each changed column, then across); if anything matched, again. Changed cells are rows 0 to the lowest hole in each column with bit 128 in its hole byte. |
 | 3600 | one changed column `g`: widen the column range (`cl`-`ch`) and the deepest row (`lm`), then check its vertical windows starting at rows 0 to its lowest hole row (at most 5). The horizontal windows are checked afterwards in 3500, rows 0 to `lm`, from 2 columns left of `cl` to `ch` (within 0-5): checking each changed cell's own windows instead would test the same windows many times over. |
+| 4000 | quit? "QUIT? Y/N" on row 21 (buffer emptied first, so typed-ahead keys can't answer); `y` restores the VIC's normal colors (`poke36879,27`, `{blu}`), clears the screen and ends; any other key erases the prompt and play goes on |
+| 4100 | set the print position to row `ty`, column `tx` with the KERNAL's PLOT (`sys65520`, row in 781, column in 782, 783=0 to set); as RingSort's 1000 |
 
 ## Variables
 
@@ -177,6 +179,7 @@ Only cells that just changed are checked, never the whole board: a full scan too
 | `cl`, `ch`, `lm` | in the cascade: first and last changed column, deepest changed row |
 | `l` | a changed column's lowest hole row, in 3600 |
 | `r` | also the row loop in the cascade's horizontal check |
+| `ty`, `tx` | print position for 4100: row and column |
 | `e` | the box's bottom-left screen address, inside 2000 |
 | `i` | loop counter (board loops) |
 | `j` | loop counter (init and the box, so the box can run inside an `i` loop later) |
@@ -205,3 +208,4 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | 2026-11-08 | 1330 | clearing: matched cells become empty (type 6) after the flash (PRG 1958 bytes) |
 | 2026-11-08 | 861 | gravity and refills, falling a row per frame (PRG 2382 bytes) |
 | 2026-11-08 | 621 | the cascade loop, and the row-0 fix (PRG 2657 bytes; measured after a swap that may not have matched, so about 28 less once the cascade's variables exist) |
+| 2026-11-08 | 422 | keys: `q` with confirmation, other keys ignored, print-position routine (PRG 2842 bytes) |

@@ -20,7 +20,8 @@
 350 sw=asc(a$)>127
 355 ifswthena$=chr$(asc(a$)and127)
 360 ifa$="w"ora$="a"ora$="s"ora$="d"then390
-370 end
+370 ifa$="q"thengosub4000
+380 goto340
 390 r=cr-(a$="s"andcr<7)+(a$="w"andcr>0)
 400 c=cc-(a$="d"andcc<7)+(a$="a"andcc>0)
 420 ifr=crthenifc=ccthen340
@@ -138,3 +139,12 @@
 3630 ifl>5thenl=5
 3640 j=8:fors=bb+gtobb+l*8+gstep8:gosub3150:next
 3650 return
+
+4000 ty=21:tx=6:gosub4100:print"{wht}quit? y/n";:poke198,0:rem quit? only y ends
+4010 geta$:ifa$=""then4010
+4020 ifa$="y"thenpoke36879,27:print"{clr}{blu}";:end
+4030 gosub4100:print"         ";
+4040 return
+
+4100 poke781,ty:poke782,tx:poke783,0:sys65520:rem print position: row ty, column tx
+4110 return
