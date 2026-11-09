@@ -8,7 +8,7 @@ MonkeySwap, a match-3 puzzle game for an **unexpanded VIC-20**, written in Commo
 
 **Work in small steps.** The user wants to review and fully understand every piece of code in this game: one routine or idea per change, with the BASIC choices explained (why this construct, what it costs). Stop after each step for review; don't build ahead.
 
-**Short comments.** One short `rem` per routine (a few words, on the routine's first line), nothing more: long `rem`s took 1737 of 2751 bytes by step 3 (2026-11-08). The explanations go in `docs/design.md` (routine table, data model, variables) and in the step's walkthrough.
+**Short comments.** One short `rem` per routine that names it, at the end of the routine's first code line (`1000 fori=0to63:rem fill, no runs of 3`); the build strips them (`buildtools/strip-rems.ps1`), so they cost nothing in the PRG, and a jump to a rem-only line would fail (the lint warns). The explanations go in `docs/design.md` (routine table, data model, variables) and in the step's walkthrough. Long `rem`s once took 1737 of 2751 bytes (2026-11-08), which is how this started.
 
 ## Build and run
 
