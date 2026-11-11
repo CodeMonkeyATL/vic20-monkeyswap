@@ -9,7 +9,7 @@
 300 gosub1980:rem play: wasd moves, shift+wasd swaps
 330 poke198,0:kt=ti:rd=0
 340 geta$:ifa$=""thengosub5000:goto340
-345 poke8152,32:kt=ti:k=asc(a$)and127:ifk=81thenifl=81then5540:rem qq quits (81 q)
+345 poke8152,32:kt=ti:k=asc(a$)and127:ifk=81thenifl=81then5530:rem qq quits (81 q)
 350 l=k:r=cr-(k=83andcr<7)+(k=87andcr>0):c=cc-(k=68andcc<7)+(k=65andcc>0):rem 83 s, 87 w, 68 d, 65 a
 420 ifr=crthenifc=ccthen340
 430 ifasc(a$)>127thengosub2200:goto330
@@ -79,9 +79,19 @@
 5040 ht=1:gosub2400:gosub2990:gosub2400:ht=0:ifmnthenhc=-1:poke8152,32
 5050 return
 
-5500 poke214,20:print:printtab(6)"{wht}game over";:poke900,2:poke901,253:poke902,2:rem no move left; result: game 2, endless
-5510 poke903,1:v=sc:fori=904to906:pokei,v-256*int(v/256):v=int(v/256):next:rem 1 field (pts)
-5520 poke198,0:wait198,1:run:rem any key plays again (the launcher posts the result when it next runs)
-5540 poke36879,27:print"{clr}{blu}";:end
+5500 poke214,20:print:printtab(6)"{wht}game over";:gosub5600:rem no move left
+5510 ifpeek(841)thenprint:printtab(5)"{red}l{wht}eaderboard";:rem from a launcher: offer l
+5520 poke198,0:wait198,1:geta$:ifa$="l"thenifpeek(841)then5540:rem l back to a launcher; any other key plays again
+5525 run
+
+5530 ifpeek(841)thenifsc>0thengosub5600:rem qq: a launched game leaves its score so far
+5540 poke36879,27:print"{clr}{blu}";:ifpeek(841)=0thenend:rem leave: started alone, just end
+5550 print"{down}{down}load"chr$(34);:fori=1topeek(842):printchr$(peek(842+i));:next:rem load the launcher (name at 843, device 841)
+5560 printchr$(34)","peek(841)"{home}";:poke631,13:poke632,82:poke633,85
+5570 poke634,78:poke635,13:poke198,5:end
+
+5600 poke900,2:poke901,253:poke902,2:poke903,1:v=sc:rem result for the launcher: game 2, endless, 1 field (pts)
+5610 fori=904to906:pokei,v-256*int(v/256):v=int(v/256):next:return
 
 5900 sp=sp+1:poke8152,asc(mid$("{$60}{$6e}{$7d}{$6d}",(spand3)+1))-32:return:rem spinner: one step
+
