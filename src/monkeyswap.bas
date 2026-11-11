@@ -1,4 +1,4 @@
-100 poke36879,8:t=rnd(-ti):dimpg%(14):bb=919:bh=1012:print"{clr}":poke38872,7:rem init; board, holes (cassette buffer); spinner yellow
+100 poke36879,8:poke36878,15:t=rnd(-ti):dimpg%(14):bb=919:bh=1012:print"{clr}":poke38872,7:rem init: colors, volume; board, holes (cassette buffer); spinner yellow
 180 fori=0to14:readpg%(i):next:data65,83,88,90,81,87,32,,7,2,5,3,4,1,1:rem pieces 0-5, 6=empty: codes at 0-6, colors at 8-14
 
 200 fori=0to63:rem fill, no runs of 3, drawing as it goes
@@ -60,7 +60,7 @@
 3440 p=7771+q*44+g*2:fora=atobb+gstep-8:w=peek(a-8):ifa<bb+8thenw=int(rnd(1)*6)
 3460 pokea,w:pokep,pg%(w):pokep+30720,pg%(w+8):p=p-44:next:mn=mn-1:pokebh+g,b-8:return
 
-3500 rd=rd+1:sc=sc+mn*10*rd:gosub3800:gosub3200:cl=8:lm=0:rem cascade round rd: score, clear, fall, check
+3500 rd=rd+1:sc=sc+mn*10*rd:gosub3800:gosub6000:gosub3200:cl=8:lm=0:rem cascade round rd: score, clear, fall, check
 3520 forg=0to7:b=peek(bh+g):ifb>127thengosub3600
 3530 next:j=1:forr=0tolm:ford=cl-2toch:ifd>=0thenifd<6thens=bb+r*8+d:gosub3100
 3560 next:next:ifmnthen3500
@@ -87,7 +87,7 @@
 5525 run
 
 5530 ifpeek(841)thenifsc>0thengosub5600:rem qq: a launched game leaves its score so far
-5540 poke36879,27:print"{clr}{blu}";:ifpeek(841)=0thenend:rem leave: started alone, just end
+5540 poke36878,0:poke36879,27:print"{clr}{blu}";:ifpeek(841)=0thenend:rem leave: started alone, just end
 5550 print"{down}{down}load"chr$(34);:fori=1topeek(842):printchr$(peek(842+i));:next:rem load the launcher (name at 843, device 841)
 5560 printchr$(34)","peek(841)"{home}";:poke631,13:poke632,82:poke633,85
 5570 poke634,78:poke635,13:poke198,5:end
@@ -97,3 +97,6 @@
 
 5900 sp=sp+1:poke8152,asc(mid$("{$60}{$6e}{$7d}{$6d}",(spand3)+1))-32:return:rem spinner: one step
 
+
+6000 n=175+3*mn+6*rd:ifn>254thenn=254:rem match ding: pitch from the pieces (mn) and the round (rd)
+6010 poke36876,n:forj=1to12:next:poke36876,64+.75*n:forj=1to40:next:poke36876,0:return
