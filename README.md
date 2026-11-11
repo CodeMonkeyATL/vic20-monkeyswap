@@ -22,7 +22,7 @@ To be written once the game plays.
 **Quit by accident?** The game is still in memory, so you can carry on where you left off. At `READY.`, type:
 
 ```
-print chr$(147):poke36879,8:p$="":gosub1100:gosub3800:goto300
+print chr$(147):poke36879,8:l=0:fori=0to63:gosub1200:next:gosub3800:goto300
 ```
 
 That clears the screen, sets the black background again, forgets the last `q`, redraws the board and the score, and goes back to playing. Checking `print fre(0)` first is fine, but don't type `run` or change a program line: either one clears the game's variables.

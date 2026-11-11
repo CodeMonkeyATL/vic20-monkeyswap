@@ -28,7 +28,7 @@ MonkeySwap, a match-3 puzzle game for an **unexpanded VIC-20**, written in Commo
 
 ## Source files (`src/`)
 
-- `monkeyswap.bas`: the game. So far it fills an 8x8 board without runs of three, draws it, moves a rounded box cursor with WASD and swaps pieces with Shift+WASD; a swap that makes no run of three swaps back; matched pieces flash and are cleared, the columns fall a row at a time with new pieces dropping in from the top, and new runs cascade until none are left, scoring 10 per piece times the cascade round, shown above the board; while the player is idle it looks for a possible swap (a spinner shows it thinking) and ends the game when there's none, leaving the result for the launcher (game 2, variant 2); `q` twice quits, other keys are ignored. Memory is at its ceiling (36 bytes free after play): adding anything means taking something out.
+- `monkeyswap.bas`: the game. So far it fills an 8x8 board without runs of three, draws it, moves a rounded box cursor with WASD and swaps pieces with Shift+WASD; a swap that makes no run of three swaps back; matched pieces flash and are cleared, the columns fall a row at a time with new pieces dropping in from the top, and new runs cascade until none are left, scoring 10 per piece times the cascade round, shown above the board; while the player is idle it looks for a possible swap (a spinner shows it thinking) and ends the game when there's none, leaving the result for the launcher (game 2, variant 2); `q` twice quits, other keys are ignored. About 825 bytes are free after play since the second tightening pass (2026-11-10).
 
 ## Docs
 
