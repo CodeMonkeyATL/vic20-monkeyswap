@@ -10,6 +10,7 @@
 330 poke198,0:kt=ti:rd=0
 340 geta$:ifa$=""thengosub5000:goto340
 345 poke8152,32:kt=ti:k=asc(a$)and127:ifk=81thenifl=81then5530:rem qq quits (81 q)
+347 hw=(k=72):rem h asks for a hint (72 h); 5000 shows it once a move is known
 350 l=k:r=cr-(k=83andcr<7)+(k=87andcr>0):c=cc-(k=68andcc<7)+(k=65andcc>0):rem 83 s, 87 w, 68 d, 65 a
 420 ifr=crthenifc=ccthen340
 430 ifasc(a$)>127thengosub2200:goto330
@@ -72,11 +73,12 @@
 
 3800 print"{home}{down}{rght}{yel}"sc;:return:rem show the score
 
-5000 ifhc<0orti-kt<120thenreturn:rem idle 2 s: try one swap (hc: cell*2+direction, -1 found); none works: game over
+5000 ifhc<0thenifhwthenhw=0:km=0:gosub1990:x=-1-hc:cr=int(x/8):cc=xand7:gosub1980:rem hint: cursor to the found cell
+5005 ifhc<0orti-kt<120thenreturn:rem idle 2 s: try one swap (hc: cell*2+direction; -1-x found at x); none works: game over
 5010 ifhc>127then5500
 5020 k=(hc+ho)and127:x=int(k/2):w=kand1:y=x+1+7*w:hc=hc+1:mn=0:gosub5900:rem from a random start, wrapping
 5030 if(xand7)-w>6ory>63thenreturn:rem off the board
-5040 ht=1:gosub2400:gosub2990:gosub2400:ht=0:ifmnthenhc=-1:poke8152,32
+5040 ht=1:gosub2400:gosub2990:gosub2400:ht=0:ifmnthenhc=-1-x:poke8152,32
 5050 return
 
 5500 poke214,20:print:printtab(6)"{wht}game over";:gosub5600:rem no move left
