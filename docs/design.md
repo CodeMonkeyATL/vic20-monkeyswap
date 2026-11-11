@@ -136,7 +136,7 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 
 | Lines | Routine |
 |---|---|
-| 100 | init: black screen, seed `rnd`, set the buffer addresses, clear the screen (which makes color RAM white), spinner cell yellow, read the piece table (180) |
+| 100 | init: black screen, volume 15 (for the sounds), seed `rnd`, set the buffer addresses, clear the screen (which makes color RAM white), spinner cell yellow, read the piece table (180) |
 | 200 | fill the board with random pieces 0-5, without runs of three, drawing each cell as it's placed (1200): a piece (`t`) that would make three with the two cells before it or the two above is drawn again. **There are no edge guards:** in columns 0-1 the "two before" are the end of the previous row, and in rows 0-1 the "two above" are bytes before the board (903-918, only read). A match there just rerolls a piece that didn't need it, which is harmless and saves the two guards. Then the random start for the no-moves check (`ho`), the score, and the cursor's position (row 3, column 3). |
 | 300 | play: show the cursor, empty the buffer (autostart's stray `z` and keys typed during setup), then wait for keys. The key becomes a number, `k=asc(a$)and127`, which drops the Shift bit so both forms share one decode. `w`/`a`/`s`/`d` (87, 65, 83, 68) move the cursor one cell (erase, move, draw); the new row and column use comparisons as numbers (−1 when true): `r=cr-(k=83andcr<7)+(k=87andcr>0)`, so at an edge, or for any other key, nothing changes and 420 goes back to waiting (there's no separate "is it wasd" test). With Shift held (`asc(a$)>127`) the same direction swaps instead (2200), and the buffer is emptied afterwards (back to 330). `q` twice in a row quits (345: the previous key is kept in `l`). A key also erases the spinner and restarts the 2-second idle timer (`kt`). While no key is waiting, 5000 runs one trial of the no-moves check. Typed-ahead moves are kept, so quick taps all count.  `h` asks for a hint (347: `hw` is −1 for `h`, 0 for any other key). |
 | 1200 | draw cell `i` by poking screen and color RAM: the cell's byte in `w` (`peek(bb+i)`), then glyph `pg%(wand7)` (+128, reversed, when marked) and color `pg%(wor8)` at `7771+i*2+int(i/8)*28`. That's row × 44 + column × 2 written with one `int`: `i` = 8r + c, so 2i + 28r = 44r + 2c. |
@@ -152,7 +152,7 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 | 3200 | flash the matched cells: show them reversed (marked), pause 30 jiffies; then falls into 3300 |
 | 3300 | clear and fall. One pass over the match list sets each cell to 6 (empty), redraws it as a space, and fills the hole bytes (count each column's holes, keep its lowest row). Then frames run until every hole is filled, with a 3-jiffy pause and a spinner step between frames. Each frame runs 3420 for every column with holes left (`band120`, the count bits). **`mn` counts the holes down:** every list entry is one hole and every 3420 call fills one, so the frames stop when `mn` is back to 0, which is also what the cascade check needs to start from. |
 | 3420 | one frame for column `g`: find its lowest hole, searching up from the stored row `q` (contiguous holes keep their lowest hole in place, so this usually succeeds at once); then one loop walks the board address `a` up from the hole to row 0 (`step-8`), with the screen address `p` beside it (−44): each cell takes the piece above it, and row 0 (`a<bb+8`) a new random piece instead. In row 0 the `peek(a-8)` reads a byte before the board; it's read and then replaced. One hole fewer. Since the loop ends on row 0 itself, a hole in row 0 needs no special case (the earlier version's loop stopped at row 1 and had to be skipped, because a `for` always runs once). |
-| 3500 | the cascade: count the round (`rd`) and add its score (`sc`, shown by 3800), flash, clear and fall (3200), then check every window touching a changed cell (3600 for each changed column, then across); if anything matched, again. Changed cells are rows 0 to the lowest hole in each column with bit 128 in its hole byte. The across check runs rows 0 to `lm`, window starts `cl-2` to `ch`, skipping starts outside 0-5 as 3020 does. |
+| 3500 | the cascade: count the round (`rd`) and add its score (`sc`, shown by 3800), the match ding (6000), flash, clear and fall (3200), then check every window touching a changed cell (3600 for each changed column, then across); if anything matched, again. Changed cells are rows 0 to the lowest hole in each column with bit 128 in its hole byte. The across check runs rows 0 to `lm`, window starts `cl-2` to `ch`, skipping starts outside 0-5 as 3020 does. |
 | 3600 | one changed column `g`: note the column range (`ch` is simply the latest, since `g` counts up; `cl` the first) and the deepest row (`lm`), then check its vertical windows starting at rows 0 to its lowest hole row (at most 5). Checking each changed cell's own windows instead would test the same windows many times over. |
 | 3800 | show the score on row 1, with cursor codes (`{home}{down}{rght}`) |
 | 5000 | the hint: when `h` was pressed (`hw`) and a move is known (`hc<0`), erase the cursor, put it on the found cell (`x=-1-hc`), draw it; then falls into 5005, which returns at once while `hc<0` |
@@ -162,6 +162,7 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 | 5540 | the VIC's normal colors, clear the screen; started on its own, end (the game can be resumed from `READY.`, see "Resuming after a quit"); from a launcher, load it (5550-5570, see "Launcher") |
 | 5600 | the result for the launcher in the cassette buffer: 900 game 2, 901 check 253, 902 variant 2 endless, 903 one field, 904-906 the score, low byte first |
 | 5900 | one spinner step (`sp`) at 8152, from the 4-character string `─ ╱ │ ╲` (PETSCII − 32 = screen code) |
+| 6000 | the match ding for a cascade round: pitch from `mn` and `rd` (see "Sound") |
 
 ## Variables
 
@@ -203,7 +204,11 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 
 ## Sound
 
-Each sound's register and values, for tuning by ear.
+Each sound's register and values, for tuning by ear. Chosen 2026-11-11 from `meta/src/soundlib.bas` (letters there): the match ding from 2up11's coin ding (`i`, `j`, `k`), the swap from RingSort's ring lift (`a` up as the box grows, `b` down as it shrinks), the failed swap from RingSort's buzz (`c`) and then the woosh (`d`) as the pieces go back, game over from 2up11's falling tone (`l`). Built one at a time; only the match ding so far.
+
+The volume is set to 15 at init (100) and to 0 on leaving (5540), so no note is left playing at `READY.` or in the launcher.
+
+**Match ding (6000-6010), one per cascade round,** played after the score and before the flash (3500). The pitch comes from the round's pieces before the multiplier (`mn`), shifted up by the round (`rd`), so a bigger match sounds higher and a cascade rises: `n=175+3*mn+6*rd`, which is 190 for a 3-match in round 1 (2up11's lowest ding was 193), 196 for a 5-match, 202 for a 3-match in round 3. Capped at 254, since a voice register takes at most 255 and a cross of two long runs can list up to 29 cells. Then 2up11's ding on the high voice (36876): the note for a short `for` hold (12), a lower note (`64+.75*n`) for a longer one (40), off. `n` is the pause's length too, but 3200 sets it to 30 right after, so it's free here. The `for` holds slow down a little as the game makes more variables (`j` is found later in the list); judged in play. 118 bytes in all, with the two volume pokes.
 
 ## Memory
 
@@ -231,6 +236,7 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | 2026-11-10 | 825 | second tightening pass (PRG 2442, from 3108). Measured after about 50 keys of play with matches and cascades. The game-over path adds no variable. |
 | 2026-11-10 | 590 | back to the launcher: `l` at game over, `qq` leaves the score so far (PRG 2677). Measured after play with matches; no new variables. |
 | 2026-11-10 | 506 | the hint on `h` (PRG 2754: 77 bytes, plus `hw`). Measured after play with matches and a hint. |
+| 2026-11-11 | 388 | the match ding and the volume (PRG 2872, 118 bytes; no new variables). Measured after play with a match. |
 
 
 ## Resuming after a quit
