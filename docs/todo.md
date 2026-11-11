@@ -10,7 +10,6 @@ Known issues and ideas. Nothing here is scheduled; the user picks what's worth d
 
 ## Later
 
-- **Load the launcher back** from the game (`l`, or after game over), as 2up11 does: about 160 bytes, dropped for memory (2026-11-09).
 - **Hint:** the no-moves check finds a working swap (`x`, `y` when `hm` is set); after a long idle, show it (for example, flash the piece). A few dozen bytes; only if memory allows.
 - **Sounds:** a lift for the swap (as RingSort's), a merge sound rising with each cascade round (as 2up11's), a game-over tone. Probably no memory left on an unexpanded VIC.
 - **Title and attribution** on screen, if memory allows (the README has them).

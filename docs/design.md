@@ -49,6 +49,8 @@ ROM (PETSCII) glyphs to start, to keep memory low: six distinct glyphs (♠ 97, 
 |---|---|
 | `w` `a` `s` `d` | move the cursor (it stops at the board's edges) |
 | Shift + `w` `a` `s` `d` | swap the piece under the cursor with its neighbour in that direction |
+| `q` `q` | quit; back to the launcher if it started the game |
+| `l` (game over) | back to the launcher, if it started the game; otherwise any key plays again |
 
 - One keypress per swap; there's no "pick up" state. `get` returns a shifted letter as 128 + the plain letter (Shift+W = 215, W = 87; tested in xvic by typing those codes into the keyboard buffer, a real Shift press still to try), so `and127` gives the plain letter and both share one direction decode.
 - With Shift Lock down, every WASD press swaps. "How to play" mentions it; no code for it.
@@ -87,7 +89,7 @@ The board is 8x8 pieces at a 2x2 pitch: one character per piece, with a gap colu
 | 3-19 | 2-18 | the board, with the cursor's room around it |
 | 4, 6, … 18 | 3, 5, … 17 | the pieces: board row r is screen row 4+2r, board column c is screen column 3+2c |
 
-Row 1 shows the score (yellow, from column 1; no label, for memory). Row 21, column 10 (8152) holds the spinner, which turns while the idle check runs and while pieces fall; row 21 shows GAME OVER. Rows 0, 2, 20 and 22 are free.
+Row 1 shows the score (yellow, from column 1; no label, for memory). Row 21, column 10 (8152) holds the spinner, which turns while the idle check runs and while pieces fall; row 21 shows GAME OVER, and row 22 `LEADERBOARD` under it when a launcher started the game. Rows 0, 2 and 20 are free.
 
 The top-left piece is at screen address 7680 + 4×22 + 3 = 7771. Each board row down adds 2 screen rows (44 bytes), each column right adds 2 bytes, so piece (r, c) is at `7771+r*44+c*2`. Its color RAM is 30720 higher (38400 − 7680).
 
@@ -151,8 +153,10 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 | 3600 | one changed column `g`: note the column range (`ch` is simply the latest, since `g` counts up; `cl` the first) and the deepest row (`lm`), then check its vertical windows starting at rows 0 to its lowest hole row (at most 5). Checking each changed cell's own windows instead would test the same windows many times over. |
 | 3800 | show the score on row 1, with cursor codes (`{home}{down}{rght}`) |
 | 5000 | one trial of the no-moves check, after 2 s idle (`ti-kt>=120`) and until a move is found (`hc=-1`): advance the spinner, pick cell `x` and neighbour `y` (right or down) from `(hc+ho)and127`, skip it if `y` is off the board, swap the bytes, check around both cells in test mode (a run sets `mn`), swap back. Cell 63's last trial done with no move: game over (5500). |
-| 5500 | game over: GAME OVER on row 21 (`poke214,20:print` puts the cursor on row 21: 214 is the cursor's row, and the `print` moves to the next row and sets the line up properly; then `tab(6)`), the result for the launcher in the cassette buffer (900 game 2, 901 check 253, 902 variant 2 endless, 903 one field, 904-906 the score, low byte first), then any key starts a new game: `poke198,0:wait198,1` waits for a key in the buffer, and `run` starts over (330 empties the buffer). |
-| 5540 | quit (`qq`): the VIC's normal colors, clear the screen, end. The game can be resumed from `READY.` (see "Resuming after a quit") |
+| 5500 | game over: GAME OVER on row 21 (`poke214,20:print` puts the cursor on row 21: 214 is the cursor's row, and the `print` moves to the next row and sets the line up properly; then `tab(6)`), the result for the launcher (5600). Started from a launcher (`peek(841)` not 0), `LEADERBOARD` with a red `l` on row 22 (5510). Then a key: `poke198,0:wait198,1` waits for one in the buffer and `get` takes it; `l` from a launcher goes back to it (5540), any other key starts over with `run` (5525; 330 empties the buffer). |
+| 5530 | leave (`qq`): from a launcher, write the score so far (5600) if there is one; then 5540 |
+| 5540 | the VIC's normal colors, clear the screen; started on its own, end (the game can be resumed from `READY.`, see "Resuming after a quit"); from a launcher, load it (5550-5570, see "Launcher") |
+| 5600 | the result for the launcher in the cassette buffer: 900 game 2, 901 check 253, 902 variant 2 endless, 903 one field, 904-906 the score, low byte first |
 | 5900 | one spinner step (`sp`) at 8152, from the 4-character string `─ ╱ │ ╲` (PETSCII − 32 = screen code) |
 
 ## Variables
@@ -190,7 +194,7 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 | `j` | loop counter in the box; a window's step |
 | `p` | a piece's screen address while drawing |
 | `t` | the piece being tried while filling; a cell's byte or type in a window (3100, 3120); the swap's temporary (2400); the pause's end time (2900); a throwaway result (`rnd(-ti)` seeding) |
-| `a$` | last key from `get` |
+| `a$` | last key from `get` (also the key after game over) |
 
 ## Sound
 
@@ -220,11 +224,12 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | 2026-11-08 | ~215 | the trial no-moves check with a spinner, `qq` instead of the quit prompt, PTS without a level (PRG 2985; 243 measured before any match) |
 | 2026-11-09 | 36 | the launcher result, spinner during falls, no hot-variable line, no score label, four variables reused (PRG ~3105). **Measured after 30 random keys of play**, so every variable exists; earlier rows were measured soon after a start and overstate what's left (the same build showed 120 after a start and 8 after play, before the reuse). This is the ceiling: adding anything means taking something out. |
 | 2026-11-10 | 825 | second tightening pass (PRG 2442, from 3108). Measured after about 50 keys of play with matches and cascades. The game-over path adds no variable. |
+| 2026-11-10 | 590 | back to the launcher: `l` at game over, `qq` leaves the score so far (PRG 2677). Measured after play with matches; no new variables. |
 
 
 ## Resuming after a quit
 
-After `qq`, everything the game needs is still in memory: the variables (score, cursor, the no-moves check's progress) and the board, which lives in the cassette buffer that `end` doesn't touch. Only the screen was cleared and the colors reset. At `READY.`:
+After `qq` in a game started on its own (from the launcher, `qq` loads the launcher instead), everything the game needs is still in memory: the variables (score, cursor, the no-moves check's progress) and the board, which lives in the cassette buffer that `end` doesn't touch. Only the screen was cleared and the colors reset. At `READY.`:
 
 ```
 print chr$(147):poke36879,8:l=0:fori=0to63:gosub1200:next:gosub3800:goto300
@@ -243,7 +248,19 @@ The cursor box comes out white: clearing the screen sets color RAM to white. The
 
 ## Launcher
 
-MonkeySwap works with the CodeMonkeyATL launcher (`vic20-launcher`) through the cassette buffer, as 2up11 does (the layout is in `vic20-launcher/docs/design.md`, "The cassette buffer"). At game over it writes its result at 900-906 (5500-5510): game 2, check 253, variant 2 (endless), one field, the score in 3 bytes. **It doesn't load the launcher back** (decided 2026-11-09, for memory: the keyboard-buffer load as in 2up11 cost about 160 bytes): the player runs the launcher when they like, and it posts the waiting result (the contract's secondary path). A new game doesn't touch 900-918, so the result waits there until the launcher reads it; a later game over replaces it. Quitting mid-game (`qq`) posts nothing. Tested in xvic (2026-11-09): a game over with the score set to 12345 left `2 253 2 1 57 48 0`.
+MonkeySwap works with the CodeMonkeyATL launcher (`vic20-launcher`) through the cassette buffer, as 2up11 does (the layout is in `vic20-launcher/docs/design.md`, "The cassette buffer"). At game over it writes its result at 900-906 (5600): game 2, check 253, variant 2 (endless), one field, the score in 3 bytes. A new game doesn't touch 900-918, so the result waits there until the launcher reads it; a later game over replaces it. Tested in xvic (2026-11-09): a game over with the score set to 12345 left `2 253 2 1 57 48 0`.
+
+**Going back to the launcher (2026-11-10, 235 bytes: free after play 825 → 590).** Only when a launcher started the game, which it shows by leaving its device in 841 (0 when the game was started on its own, which then behaves exactly as before):
+
+- **At game over,** row 22 shows `LEADERBOARD` with a red `l`, and `l` loads the launcher; any other key plays again. The result is already written.
+- **`qq` mid-game** loads the launcher too (the contract's "quit goes back", as in 2up11), so the player never drops to `READY.` from a launched game. **It leaves the score so far** if there is one (`sc>0`): an endless game's score only grows, so a quit is a fair end, the same policy as 2up11's (`meta/research/leaderboard/README.md`). A quit before the first match posts nothing, rather than a 0.
+- There's no `l` mid-game: `qq` does the same, and a single key that abandons a game would be easy to hit by accident.
+
+The load is the launcher's own trick (`vic20-launcher/docs/design.md`, "Starting another program"), as in 2up11's 800-820: 5550 prints `load"<name>",<device>` on row 2, with the name from 843+ (length at 842) and the device from 841; 5560-5570 put Return, `r`, `u`, `n`, Return in the keyboard buffer (631-635, count 5 at 198) and `end`. `READY.` lands on row 1, the first Return enters the `load` line, and `run` starts the launcher once it's loaded.
+
+The result writer moved into its own subroutine (5600) so both game over and `qq` use it. 5530 tests `peek(841)` before `sc>0` with a nested `if`, so a game started on its own never writes a result on quit.
+
+**Tested in xvic (2026-11-10),** with `2,MONKEYSWAP` added for the test to the mock list `games` in `prgs-latest` (and removed again): launcher → `2` → one match (30) → `qq` → the launcher showed `/v1/s?g=2&v=2&p=1&a=30`; launcher → `2` → `qq` at once → nothing posted; a forced game over in a launched game (score 4321, `hc=128` from the prompt) → `LEADERBOARD` on row 22 → `l` → `/v1/s?g=2&v=2&p=1&a=4321`. Started on its own: `qq` ends at `READY.`, and a game over shows no `LEADERBOARD`, where `l` starts a new game.
 
 Still needed elsewhere: register game 2 (MonkeySwap, variant 2 ENDLESS, field PTS) in `leaderboard-service`'s seed, and add it to the launcher's game list (see `todo.md`).
 
