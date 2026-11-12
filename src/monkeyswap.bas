@@ -86,6 +86,7 @@
 
 5500 poke214,20:print:printtab(6)"{wht}game over";:gosub5600:rem no move left
 5510 ifpeek(841)thenprint:printtab(5)"{red}l{wht}eaderboard";:rem from a launcher: offer l
+5515 fori=200to140step-.5:poke36874,i:next:poke36874,0:rem falling tone
 5520 poke198,0:wait198,1:geta$:ifa$="l"thenifpeek(841)then5540:rem l back to a launcher; any other key plays again
 5525 run
 
