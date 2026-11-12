@@ -27,8 +27,10 @@
 2070 forj=22tokh-22step22:pokeka+j,32+km*61:pokeka+j+kw,32+km*61:next:return
 
 2200 km=0:gosub1990:x=cr*8+cc:y=r*8+c:ka=ka+2*(c<cc)+44*(r<cr):kw=2-2*(r=cr):rem swap cr,cc with r,c: grow, swap, shrink
-2260 kh=44-44*(c=cc):km=1:gosub2000:n=5:gosub2900:gosub2400:gosub2900:mn=0:gosub2990
-2280 ifmn=0thengosub2400:r=cr:c=cc:gosub2900
+2260 kh=44-44*(c=cc):km=1:gosub2000:fori=200to240step4:poke36875,i:next:poke36875,0:rem grow; ring up
+2270 n=5:gosub2900:gosub2400:gosub2900:mn=0:gosub2990
+2280 ifmnthen2290:rem a match: the cascade's ding is its sound
+2285 fori=150to130step-1:poke36874,i:next:poke36874,0:gosub2400:r=cr:c=cc:gosub2900:rem none: buzz, back
 2290 km=0:gosub2000:cr=r:cc=c:gosub1980:ifmnthenhc=0:ho=rnd(1)*128:gosub3500
 2310 return
 
