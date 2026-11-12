@@ -1,4 +1,5 @@
-100 poke36879,8:poke36878,15:t=rnd(-ti):dimpg%(14):bb=919:bh=1012:print"{clr}":poke38872,7:rem init: colors, volume; board, holes (cassette buffer); spinner yellow
+100 poke36879,8:poke36878,15:t=rnd(-ti):dimpg%(14):bb=919:bh=1012:print"{clr}":rem init: colors, volume; board, holes (cassette buffer)
+110 poke8152,42:poke38872,0:rem the spinner (*), hidden in black
 180 fori=0to14:readpg%(i):next:data65,83,88,90,81,87,32,,7,2,5,3,4,1,1:rem pieces 0-5, 6=empty: codes at 0-6, colors at 8-14
 
 200 fori=0to63:rem fill, no runs of 3, drawing as it goes
@@ -9,7 +10,7 @@
 300 gosub1980:rem play: wasd moves, shift+wasd swaps
 330 poke198,0:kt=ti:rd=0
 340 geta$:ifa$=""thengosub5000:goto340
-345 poke8152,32:kt=ti:k=asc(a$)and127:ifk=81thenifl=81then5530:rem qq quits (81 q)
+345 poke38872,0:kt=ti:k=asc(a$)and127:ifk=81thenifl=81then5530:rem qq quits (81 q)
 347 hw=(k=72):rem h asks for a hint (72 h); 5000 shows it once a move is known
 350 l=k:r=cr-(k=83andcr<7)+(k=87andcr>0):c=cc-(k=68andcc<7)+(k=65andcc>0):rem 83 s, 87 w, 68 d, 65 a
 420 ifr=crthenifc=ccthen340
@@ -78,7 +79,7 @@
 5010 ifhc>127then5500
 5020 k=(hc+ho)and127:x=int(k/2):w=kand1:y=x+1+7*w:hc=hc+1:mn=0:gosub5900:rem from a random start, wrapping
 5030 if(xand7)-w>6ory>63thenreturn:rem off the board
-5040 ht=1:gosub2400:gosub2990:gosub2400:ht=0:ifmnthenhc=-1-x:poke8152,32
+5040 ht=1:gosub2400:gosub2990:gosub2400:ht=0:ifmnthenhc=-1-x:poke38872,0
 5050 return
 
 5500 poke214,20:print:printtab(6)"{wht}game over";:gosub5600:rem no move left
@@ -95,7 +96,7 @@
 5600 poke900,2:poke901,253:poke902,2:poke903,1:v=sc:rem result for the launcher: game 2, endless, 1 field (pts)
 5610 fori=904to906:pokei,v-256*int(v/256):v=int(v/256):next:return
 
-5900 sp=sp+1:poke8152,asc(mid$("{$60}{$6e}{$7d}{$6d}",(spand3)+1))-32:return:rem spinner: one step
+5900 sp=(sp+2)and7:poke38872,spor1:return:rem spinner: one step, cycling white, cyan, green, yellow
 
 
 6000 n=175+3*mn+6*rd:ifn>254thenn=254:rem match ding: pitch from the pieces (mn) and the round (rd)
