@@ -143,7 +143,7 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 | 1980 | draw the cursor: `km=1`, then falls into 1990 |
 | 1990 | the cursor box in mode `km`: a 3x3 box around the piece at `cr`, `cc` (its top-left is one row up and one column left of the piece: 7771 − 23 = 7748), then falls into 2000. Erase with `km=0:gosub1990`. |
 | 2000 | draw (`km=1`) or erase (`km=0`) a rounded box with its top-left corner at `ka`. `kw` is the offset to its right edge (2 or 4) and `kh` the offset to its bottom row (44 or 88), so the corners are `ka`, `ka+kw`, `ka+kh` and `ka+kh+kw` with no arithmetic on cell counts. Four corners, then the top and bottom lines, then the sides one screen row (22) at a time. |
-| 2200 | swap the piece at `cr`,`cc` with its neighbour at `r`,`c`: erase the cursor (which leaves `ka` at the cursor box's corner); grow the box over both cells: the corner moves 2 left for a swap to the left and 44 up for a swap upward (`ka=ka+2*(c<cc)+44*(r<cr)`, true being −1), and `kw=2-2*(r=cr)` makes it 4 wide for a swap in the same row, `kh` likewise 88 for one in the same column; pause; swap the two cells' bytes through `t` (2400) and redraw both cells; pause; check around both cells (2990); erase the grown box; draw the cursor at the new spot. With no match (`mn=0`) the pieces swap back and the cursor stays. With a match, the cascade (3500) clears, lets the columns fall and refill, and repeats while new runs form. |
+| 2200 | swap the piece at `cr`,`cc` with its neighbour at `r`,`c`: erase the cursor (the swap sounds play along: see "Sound") (which leaves `ka` at the cursor box's corner); grow the box over both cells: the corner moves 2 left for a swap to the left and 44 up for a swap upward (`ka=ka+2*(c<cc)+44*(r<cr)`, true being −1), and `kw=2-2*(r=cr)` makes it 4 wide for a swap in the same row, `kh` likewise 88 for one in the same column; pause; swap the two cells' bytes through `t` (2400) and redraw both cells; pause; check around both cells (2990); erase the grown box; draw the cursor at the new spot. With no match (`mn=0`) the pieces swap back and the cursor stays. With a match, the cascade (3500) clears, lets the columns fall and refill, and repeats while new runs form. |
 | 2400 | swap the values of cells `x` and `y` through `t` and redraw both; in a trial (`ht`), swap only, no drawing |
 | 2900 | pause `n` jiffies (1/60 s), using `ti`, so the speed doesn't depend on what else runs |
 | 2990 | check around both swapped cells: 3000 for `x`, then falls into 3000 for `y` |
@@ -204,11 +204,21 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 
 ## Sound
 
-Each sound's register and values, for tuning by ear. Chosen 2026-11-11 from `meta/src/soundlib.bas` (letters there): the match ding from 2up11's coin ding (`i`, `j`, `k`), the swap from RingSort's ring lift (`a` up as the box grows, `b` down as it shrinks), the failed swap from RingSort's buzz (`c`) and then the woosh (`d`) as the pieces go back, game over from 2up11's falling tone (`l`). Built one at a time; only the match ding so far.
+Each sound's register and values, for tuning by ear. Chosen 2026-11-11 from `meta/src/soundlib.bas` (letters there): the match ding from 2up11's coin ding (`i`, `j`, `k`), the swap from RingSort's ring lift (`a`, as the box grows; the ring down `b` for the shrink was dropped, since the buzz or the match ding already ends every swap), the failed swap from RingSort's buzz (`c`; the woosh `d` after it was dropped, since the two said the same thing and the woosh cost 22 bytes more), game over from 2up11's falling tone (`l`). Built one at a time: the match ding, then the swap sounds; game over (and the slide on a cursor move, soundlib `h`, if there's room) still to come.
 
 The volume is set to 15 at init (100) and to 0 on leaving (5540), so no note is left playing at `READY.` or in the launcher.
 
 **Match ding (6000-6010), one per cascade round,** played after the score and before the flash (3500). The pitch comes from the round's pieces before the multiplier (`mn`), shifted up by the round (`rd`), so a bigger match sounds higher and a cascade rises: `n=175+3*mn+6*rd`, which is 190 for a 3-match in round 1 (2up11's lowest ding was 193), 196 for a 5-match, 202 for a 3-match in round 3. Capped at 254, since a voice register takes at most 255 and a cross of two long runs can list up to 29 cells. Then 2up11's ding on the high voice (36876): the note for a short `for` hold (12), a lower note (`64+.75*n`) for a longer one (40), off. `n` is the pause's length too, but 3200 sets it to 30 right after, so it's free here. The `for` holds slow down a little as the game makes more variables (`j` is found later in the list); judged in play. 118 bytes in all, with the two volume pokes.
+
+**Swap sounds (2260-2285), written out where they play.** A shared sweep routine (`fori=ftoesteps:pokev,i:next:pokev,0`, 37 bytes) didn't pay: a call with its four parameters (`v=36875:f=200:e=240:s=4:gosub…`) is as long as the loop written out, and `f` and `e` would be two new variables. Each sweep turns its voice off at the end.
+
+| When | Sound | Code |
+|---|---|---|
+| the box grows over both pieces (2260) | ring up: 200 to 240, step 4, voice 36875 | RingSort's lift (`a`) |
+| a match (2280) | none of its own: the cascade's match ding follows (a ring down there was dropped, 2026-11-11: a swap ends in either the buzz or a ding) | |
+| no match (2285) | buzz: 150 to 130, step −1, low voice 36874 | RingSort's invalid move (`c`) |
+
+The buzz plays before the pieces go back; the pause after it is the one that was there before the sounds. 78 bytes in all; no new variables (`i` is the loop counter everywhere).
 
 ## Memory
 
@@ -238,6 +248,8 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | 2026-11-10 | 506 | the hint on `h` (PRG 2754: 77 bytes, plus `hw`). Measured after play with matches and a hint. |
 | 2026-11-11 | 388 | the match ding and the volume (PRG 2872, 118 bytes; no new variables). Measured after play with a match. |
 | 2026-11-11 | ~390 | the color spinner (PRG 2870, 2 bytes smaller: the step lost 17, the ✱'s new init line cost 15). Not re-measured; no variables changed. |
+| 2026-11-11 | 262 | the swap sounds: ring up, buzz, woosh (PRG 2998, 128 bytes; no new variables). Measured after play with failed swaps and a match. |
+| 2026-11-11 | 312 | the woosh dropped from the failed swap, the buzz kept (PRG 2948, swap sounds 78 bytes). Measured after play with failed swaps and a match. |
 
 
 ## Resuming after a quit
