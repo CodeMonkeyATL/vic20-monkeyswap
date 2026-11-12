@@ -92,11 +92,11 @@ The board is 8x8 pieces at a 2x2 pitch: one character per piece, with a gap colu
 | 3-19 | 2-18 | the board, with the cursor's room around it |
 | 4, 6, … 18 | 3, 5, … 17 | the pieces: board row r is screen row 4+2r, board column c is screen column 3+2c |
 
-Row 1 shows the score (yellow, from column 1; no label, for memory). Row 21, column 10 (8152) holds the spinner, which turns while the idle check runs and while pieces fall; row 21 shows GAME OVER, and row 22 `LEADERBOARD` under it when a launcher started the game. Rows 0, 2 and 20 are free.
+Row 1 shows the score (yellow, from column 1; no label, for memory). Row 21, column 10 (8152) holds the spinner, a ✱ that cycles white, cyan, green and yellow while the idle check runs and while pieces fall, and is black (hidden) otherwise; row 21 shows GAME OVER, and row 22 `LEADERBOARD` under it when a launcher started the game. Rows 0, 2 and 20 are free.
 
 The top-left piece is at screen address 7680 + 4×22 + 3 = 7771. Each board row down adds 2 screen rows (44 bytes), each column right adds 2 bytes, so piece (r, c) is at `7771+r*44+c*2`. Its color RAM is 30720 higher (38400 − 7680).
 
-**The whole screen is white in color RAM.** `{clr}` at init does it: on the VIC-20, clearing the screen also writes white (1) into every cell's color RAM. Checked in xvic 2026-11-10: color RAM filled with red by hand, then `run`, and the cursor box came out white. (An earlier note here said `{clr}` leaves color RAM alone, and init printed 17 rows of white spaces to set it; that test started from color RAM that was already white.) The pieces are then poked in their own colors, and the cursor box, which lives in the gap cells, only pokes screen RAM. The spinner's cell is made yellow once (`poke38872,7`).
+**The whole screen is white in color RAM.** `{clr}` at init does it: on the VIC-20, clearing the screen also writes white (1) into every cell's color RAM. Checked in xvic 2026-11-10: color RAM filled with red by hand, then `run`, and the cursor box came out white. (An earlier note here said `{clr}` leaves color RAM alone, and init printed 17 rows of white spaces to set it; that test started from color RAM that was already white.) The pieces are then poked in their own colors, and the cursor box, which lives in the gap cells, only pokes screen RAM. The spinner's ✱ is poked into screen RAM once at init (110), and from then on only its color changes.
 
 ## Data model
 
@@ -136,7 +136,7 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 
 | Lines | Routine |
 |---|---|
-| 100 | init: black screen, volume 15 (for the sounds), seed `rnd`, set the buffer addresses, clear the screen (which makes color RAM white), spinner cell yellow, read the piece table (180) |
+| 100 | init: black screen, volume 15 (for the sounds), seed `rnd`, set the buffer addresses, clear the screen (which makes color RAM white), read the piece table (180); 110 puts the spinner's ✱ (screen code 42) at 8152 in black |
 | 200 | fill the board with random pieces 0-5, without runs of three, drawing each cell as it's placed (1200): a piece (`t`) that would make three with the two cells before it or the two above is drawn again. **There are no edge guards:** in columns 0-1 the "two before" are the end of the previous row, and in rows 0-1 the "two above" are bytes before the board (903-918, only read). A match there just rerolls a piece that didn't need it, which is harmless and saves the two guards. Then the random start for the no-moves check (`ho`), the score, and the cursor's position (row 3, column 3). |
 | 300 | play: show the cursor, empty the buffer (autostart's stray `z` and keys typed during setup), then wait for keys. The key becomes a number, `k=asc(a$)and127`, which drops the Shift bit so both forms share one decode. `w`/`a`/`s`/`d` (87, 65, 83, 68) move the cursor one cell (erase, move, draw); the new row and column use comparisons as numbers (−1 when true): `r=cr-(k=83andcr<7)+(k=87andcr>0)`, so at an edge, or for any other key, nothing changes and 420 goes back to waiting (there's no separate "is it wasd" test). With Shift held (`asc(a$)>127`) the same direction swaps instead (2200), and the buffer is emptied afterwards (back to 330). `q` twice in a row quits (345: the previous key is kept in `l`). A key also erases the spinner and restarts the 2-second idle timer (`kt`). While no key is waiting, 5000 runs one trial of the no-moves check. Typed-ahead moves are kept, so quick taps all count.  `h` asks for a hint (347: `hw` is −1 for `h`, 0 for any other key). |
 | 1200 | draw cell `i` by poking screen and color RAM: the cell's byte in `w` (`peek(bb+i)`), then glyph `pg%(wand7)` (+128, reversed, when marked) and color `pg%(wor8)` at `7771+i*2+int(i/8)*28`. That's row × 44 + column × 2 written with one `int`: `i` = 8r + c, so 2i + 28r = 44r + 2c. |
@@ -161,7 +161,7 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 | 5530 | leave (`qq`): from a launcher, write the score so far (5600) if there is one; then 5540 |
 | 5540 | the VIC's normal colors, clear the screen; started on its own, end (the game can be resumed from `READY.`, see "Resuming after a quit"); from a launcher, load it (5550-5570, see "Launcher") |
 | 5600 | the result for the launcher in the cassette buffer: 900 game 2, 901 check 253, 902 variant 2 endless, 903 one field, 904-906 the score, low byte first |
-| 5900 | one spinner step (`sp`) at 8152, from the 4-character string `─ ╱ │ ╲` (PETSCII − 32 = screen code) |
+| 5900 | one spinner step: `sp` counts 0, 2, 4, 6 (`(sp+2)and7`), and `spor1` turns that into the color 1, 3, 5, 7 (white, cyan, green, yellow, all clear on black) poked into the ✱'s color RAM (38872). A key or a found move hides it again with color 0. The wrap keeps `sp` small: the earlier glyph spinner counted up forever, and its `spand3` would stop with `?ILLEGAL QUANTITY` past 32767 steps, in a very long game. The odd colors also stay below 8, which would switch the cell to multicolor. |
 | 6000 | the match ding for a cascade round: pitch from `mn` and `rd` (see "Sound") |
 
 ## Variables
@@ -194,7 +194,7 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 | `ho` | the no-moves check's random start (0-127), new for each board |
 | `ht` | a trial is running (test mode); a run it finds sets `mn` to 1 |
 | `kt` | `ti` at the last key or swap (2-second idle timer) |
-| `sp` | the spinner's step count |
+| `sp` | the spinner's step: 0, 2, 4 or 6 |
 | `rd` | the cascade round of the current move, from 1 (reset at 330, after every swap) |
 | `i` | loop counter (board loops); the cell for 1200 and 3000 |
 | `j` | loop counter in the box; a window's step |
@@ -237,6 +237,7 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | 2026-11-10 | 590 | back to the launcher: `l` at game over, `qq` leaves the score so far (PRG 2677). Measured after play with matches; no new variables. |
 | 2026-11-10 | 506 | the hint on `h` (PRG 2754: 77 bytes, plus `hw`). Measured after play with matches and a hint. |
 | 2026-11-11 | 388 | the match ding and the volume (PRG 2872, 118 bytes; no new variables). Measured after play with a match. |
+| 2026-11-11 | ~390 | the color spinner (PRG 2870, 2 bytes smaller: the step lost 17, the ✱'s new init line cost 15). Not re-measured; no variables changed. |
 
 
 ## Resuming after a quit
@@ -256,7 +257,7 @@ print chr$(147):poke36879,8:l=0:fori=0to63:gosub1200:next:gosub3800:goto300
 | `gosub3800` | reprints the score |
 | `goto300` | draws the cursor and continues the play loop |
 
-The cursor box comes out white: clearing the screen sets color RAM to white. The spinner is white too after a resume (it was yellow), which doesn't matter. `run` or editing a program line clears the variables, after which only the board survives. Tested in xvic (2026-11-09): same board, cursor and score after resuming; a move works; a single `q` doesn't quit.
+The cursor box comes out white: clearing the screen sets color RAM to white. The spinner doesn't show after a resume: the clear erased its ✱, and only its color is changed from then on; `poke8152,42` brings it back, but the resume line has no room for it within the 88 characters typed at the prompt. `run` or editing a program line clears the variables, after which only the board survives. Tested in xvic (2026-11-09): same board, cursor and score after resuming; a move works; a single `q` doesn't quit.
 
 ## Launcher
 
