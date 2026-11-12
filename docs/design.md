@@ -157,7 +157,7 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 | 3800 | show the score on row 1, with cursor codes (`{home}{down}{rght}`) |
 | 5000 | the hint: when `h` was pressed (`hw`) and a move is known (`hc<0`), erase the cursor, put it on the found cell (`x=-1-hc`), draw it; then falls into 5005, which returns at once while `hc<0` |
 | 5005 | one trial of the no-moves check, after 2 s idle (`ti-kt>=120`) and until a move is found (`hc<0`): advance the spinner, pick cell `x` and neighbour `y` (right or down) from `(hc+ho)and127`, skip it if `y` is off the board, swap the bytes, check around both cells in test mode (a run sets `mn`), swap back. Cell 63's last trial done with no move: game over (5500). |
-| 5500 | game over: GAME OVER on row 21 (`poke214,20:print` puts the cursor on row 21: 214 is the cursor's row, and the `print` moves to the next row and sets the line up properly; then `tab(6)`), the result for the launcher (5600). Started from a launcher (`peek(841)` not 0), `LEADERBOARD` with a red `l` on row 22 (5510). Then a key: `poke198,0:wait198,1` waits for one in the buffer and `get` takes it; `l` from a launcher goes back to it (5540), any other key starts over with `run` (5525; 330 empties the buffer). |
+| 5500 | game over: GAME OVER on row 21 (`poke214,20:print` puts the cursor on row 21: 214 is the cursor's row, and the `print` moves to the next row and sets the line up properly; then `tab(6)`), the result for the launcher (5600). Started from a launcher (`peek(841)` not 0), `LEADERBOARD` with a red `l` on row 22 (5510). Then the falling tone (5515). Then a key: `poke198,0:wait198,1` waits for one in the buffer and `get` takes it; `l` from a launcher goes back to it (5540), any other key starts over with `run` (5525; 330 empties the buffer). |
 | 5530 | leave (`qq`): from a launcher, write the score so far (5600) if there is one; then 5540 |
 | 5540 | the VIC's normal colors, clear the screen; started on its own, end (the game can be resumed from `READY.`, see "Resuming after a quit"); from a launcher, load it (5550-5570, see "Launcher") |
 | 5600 | the result for the launcher in the cassette buffer: 900 game 2, 901 check 253, 902 variant 2 endless, 903 one field, 904-906 the score, low byte first |
@@ -204,7 +204,7 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 
 ## Sound
 
-Each sound's register and values, for tuning by ear. Chosen 2026-11-11 from `meta/src/soundlib.bas` (letters there): the match ding from 2up11's coin ding (`i`, `j`, `k`), the swap from RingSort's ring lift (`a`, as the box grows; the ring down `b` for the shrink was dropped, since the buzz or the match ding already ends every swap), the failed swap from RingSort's buzz (`c`; the woosh `d` after it was dropped, since the two said the same thing and the woosh cost 22 bytes more), game over from 2up11's falling tone (`l`). Built one at a time: the match ding, then the swap sounds; game over (and the slide on a cursor move, soundlib `h`, if there's room) still to come.
+Each sound's register and values, for tuning by ear. Chosen 2026-11-11 from `meta/src/soundlib.bas` (letters there): the match ding from 2up11's coin ding (`i`, `j`, `k`), the swap from RingSort's ring lift (`a`, as the box grows; the ring down `b` for the shrink was dropped, since the buzz or the match ding already ends every swap), the failed swap from RingSort's buzz (`c`; the woosh `d` after it was dropped, since the two said the same thing and the woosh cost 22 bytes more), game over from 2up11's falling tone (`l`). Built one at a time: the match ding, the swap sounds, then game over; the slide on a cursor move (soundlib `h`) is still to come, if there's room.
 
 The volume is set to 15 at init (100) and to 0 on leaving (5540), so no note is left playing at `READY.` or in the launcher.
 
@@ -219,6 +219,8 @@ The volume is set to 15 at init (100) and to 0 on leaving (5540), so no note is 
 | no match (2285) | buzz: 150 to 130, step −1, low voice 36874 | RingSort's invalid move (`c`) |
 
 The buzz plays before the pieces go back; the pause after it is the one that was there before the sounds. 78 bytes in all; no new variables (`i` is the loop counter everywhere).
+
+**Game over tone (5515):** 2up11's falling tone, 200 to 140 in steps of −0.5 on the low voice (36874), then off. It plays after GAME OVER (and LEADERBOARD) are shown, and before the key wait, whose `poke198,0` drops keys pressed during the tone. It has its own line because 5510's `if` would skip it for a game started on its own, and 5500 and 5520 have no room under 88 characters. 39 bytes.
 
 ## Memory
 
@@ -250,6 +252,7 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | 2026-11-11 | ~390 | the color spinner (PRG 2870, 2 bytes smaller: the step lost 17, the ✱'s new init line cost 15). Not re-measured; no variables changed. |
 | 2026-11-11 | 262 | the swap sounds: ring up, buzz, woosh (PRG 2998, 128 bytes; no new variables). Measured after play with failed swaps and a match. |
 | 2026-11-11 | 312 | the woosh dropped from the failed swap, the buzz kept (PRG 2948, swap sounds 78 bytes). Measured after play with failed swaps and a match. |
+| 2026-11-11 | 273 | the game-over tone (PRG 2987, 39 bytes; no new variables). Measured after play with a match. |
 
 
 ## Resuming after a quit
