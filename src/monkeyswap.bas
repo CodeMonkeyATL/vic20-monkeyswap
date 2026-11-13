@@ -1,22 +1,18 @@
-100 poke36879,8:poke36878,15:t=rnd(-ti):dimpg%(14):bb=919:bh=1012:print"{clr}":rem init: colors, volume; board, holes (cassette buffer)
-110 poke8152,42:poke38872,0:rem the spinner (*), hidden in black
-180 fori=0to14:readpg%(i):next:data65,83,88,90,81,87,32,,7,2,5,3,4,1,1:rem pieces 0-5, 6=empty: codes at 0-6, colors at 8-14
+100 z=36874:pokez+5,8:pokez+4,15:t=rnd(-ti):bh=1012:print"{clr}":poke8152,42:poke38872,0:rem init: z sound base, colors, volume, spinner (*) in black
+180 dimpg%(14):bb=919:fori=0to13:readpg%(i):next:data65,83,88,90,81,87,32,,7,2,5,3,4,1:rem pieces 0-5, 6=empty: codes at 0-6, colors at 8-13
 
-200 fori=0to63:rem fill, no runs of 3, drawing as it goes
-210 t=int(rnd(1)*6):ift=peek(bb+i-1)andt=peek(bb+i-2)then210
-220 ift=peek(bb+i-8)andt=peek(bb+i-16)then210
-230 pokebb+i,t:gosub1200:next:ho=rnd(1)*128:gosub3800:cr=3:cc=3:rem ho: random first trial
+200 fori=0to63:a=bb+i:rem fill, no runs of 3, drawing as it goes
+210 t=int(rnd(1)*6):if(t=peek(a-1)andt=peek(a-2))or(t=peek(a-8)andt=peek(a-16))then210
+230 pokea,t:gosub1200:next:ho=rnd(1)*128:gosub3800:cr=3:cc=3:e=peek(841):rem ho: random first trial; e: launcher's device
 
-300 gosub1980:rem play: wasd moves, shift+wasd swaps
-330 poke198,0:kt=ti:rd=0
+330 gosub1980:poke198,0:kt=ti:rd=0:rem play: wasd moves, shift+wasd swaps
 340 geta$:ifa$=""thengosub5000:goto340
-345 poke38872,0:kt=ti:k=asc(a$)and127:ifk=81thenifl=81then5530:rem qq quits (81 q)
-347 hw=(k=72):rem h asks for a hint (72 h); 5000 shows it once a move is known
+345 poke38872,0:kt=ti:k=asc(a$)and127:hw=(k=72):ifk=81thenifl=81then5530:rem h hint (72), qq quits (81)
 350 l=k:r=cr-(k=83andcr<7)+(k=87andcr>0):c=cc-(k=68andcc<7)+(k=65andcc>0):rem 83 s, 87 w, 68 d, 65 a
 420 ifr=crthenifc=ccthen340
 430 ifasc(a$)>127thengosub2200:goto330
 440 km=0:gosub1990:cr=r:cc=c:gosub1980
-450 poke36877,250:fori=11to0step-1.5:poke36878,i:next:poke36877,0:poke36878,15:goto340:rem woosh
+450 pokez+3,250:fori=11to0step-1.5:pokez+4,i:next:pokez+3,0:pokez+4,15:goto340:rem woosh
 
 1200 p=7771+i*2+int(i/8)*28:w=peek(bb+i):pokep,pg%(wand7)-128*(w>7):rem draw cell i; marked (>7) reversed
 1230 pokep+30720,pg%(wor8):return
@@ -24,15 +20,15 @@
 1980 km=1:rem draw the cursor
 1990 ka=7748+cr*44+cc*2:kw=2:kh=44:rem cursor box at cr,cc, mode km; falls into the box
 2000 w=ka+kh:pokeka,32+km*53:pokeka+kw,32+km*41:pokew,32+km*42:pokew+kw,32+km*43:rem box at ka, kw right, kh down; km=1 draw, 0 erase
-2050 forj=1tokw-1:pokeka+j,32+km*32:pokew+j,32+km*32:next
-2070 forj=22tokh-22step22:pokeka+j,32+km*61:pokeka+j+kw,32+km*61:next:return
+2050 t=32+km*32:forj=1tokw-1:pokeka+j,t:pokew+j,t:next
+2070 t=32+km*61:forj=22tokh-22step22:pokeka+j,t:pokeka+j+kw,t:next:return
 
 2200 km=0:gosub1990:x=cr*8+cc:y=r*8+c:ka=ka+2*(c<cc)+44*(r<cr):kw=2-2*(r=cr):rem swap cr,cc with r,c: grow, swap, shrink
-2260 kh=44-44*(c=cc):km=1:gosub2000:fori=200to240step4:poke36875,i:next:poke36875,0:rem grow; ring up
+2260 kh=44-44*(c=cc):km=1:gosub2000:fori=200to240step4:pokez+1,i:next:pokez+1,0:rem grow; ring up
 2270 n=5:gosub2900:gosub2400:gosub2900:mn=0:gosub2990
 2280 ifmnthen2290:rem a match: the cascade's ding is its sound
-2285 fori=150to130step-1:poke36874,i:next:poke36874,0:gosub2400:r=cr:c=cc:gosub2900:rem none: buzz, back
-2290 km=0:gosub2000:cr=r:cc=c:gosub1980:ifmnthenhc=0:ho=rnd(1)*128:gosub3500
+2285 fori=150to130step-1:pokez,i:next:pokez,0:gosub2400:r=cr:c=cc:gosub2900:rem none: buzz, back
+2290 km=0:gosub2000:cr=r:cc=c:ifmnthenhc=0:ho=rnd(1)*128:gosub3500
 2310 return
 
 2400 t=peek(bb+x):pokebb+x,peek(bb+y):pokebb+y,t:ifhtthenreturn:rem swap cells x,y, redraw (not in a trial)
@@ -86,22 +82,22 @@
 5050 return
 
 5500 poke214,20:print:printtab(6)"{wht}game over";:gosub5600:rem no move left
-5510 ifpeek(841)thenprint:printtab(5)"{red}l{wht}eaderboard";:rem from a launcher: offer l
-5515 fori=200to140step-.5:poke36874,i:next:poke36874,0:rem falling tone
-5520 poke198,0:wait198,1:geta$:ifa$="l"thenifpeek(841)then5540:rem l back to a launcher; any other key plays again
+5510 ifethenprint:printtab(5)"{red}l{wht}eaderboard";:rem from a launcher: offer l
+5515 fori=200to140step-.5:pokez,i:next:pokez,0:rem falling tone
+5520 poke198,0:wait198,1:geta$:ifa$="l"thenifethen5540:rem l back to a launcher; any other key plays again
 5525 run
 
-5530 ifpeek(841)thenifsc>0thengosub5600:rem qq: a launched game leaves its score so far
-5540 poke36878,0:poke36879,27:print"{clr}{blu}";:ifpeek(841)=0thenend:rem leave: started alone, just end
+5530 ifethenifsc>0thengosub5600:rem qq: a launched game leaves its score so far
+5540 pokez+4,0:pokez+5,27:print"{clr}{blu}";:ife=0thenend:rem leave: started alone, just end
 5550 print"{down}{down}load"chr$(34);:fori=1topeek(842):printchr$(peek(842+i));:next:rem load the launcher (name at 843, device 841)
-5560 printchr$(34)","peek(841)"{home}";:poke631,13:poke632,82:poke633,85
+5560 printchr$(34)","e"{home}";:poke631,13:poke632,82:poke633,85
 5570 poke634,78:poke635,13:poke198,5:end
 
 5600 poke900,2:poke901,253:poke902,2:poke903,1:v=sc:rem result for the launcher: game 2, endless, 1 field (pts)
-5610 fori=904to906:pokei,v-256*int(v/256):v=int(v/256):next:return
+5610 fori=904to906:t=int(v/256):pokei,v-256*t:v=t:next:return
 
 5900 sp=(sp+2)and7:poke38872,spor1:return:rem spinner: one step, cycling white, cyan, green, yellow
 
 
 6000 n=175+3*mn+6*rd:ifn>254thenn=254:rem match ding: pitch from the pieces (mn) and the round (rd)
-6010 poke36876,n:forj=1to12:next:poke36876,64+.75*n:forj=1to40:next:poke36876,0:return
+6010 pokez+2,n:forj=1to12:next:pokez+2,64+.75*n:forj=1to40:next:pokez+2,0:return
