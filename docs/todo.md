@@ -4,8 +4,6 @@ Known issues and ideas. Nothing here is scheduled; the user picks what's worth d
 
 ## Other repos
 
-- **leaderboard-service:** register MonkeySwap as game 2 (`games`: name MONKEYSWAP, repo `vic20-monkeyswap`, prg `monkeyswap`; `variants`: code 2, label ENDLESS; `game_fields`: PTS, number). The game already writes its result as game 2, variant 2. Also the launcher's mock list (`vic20-launcher/mock/games`) for xvic tests.
-
 - **vic20-launcher:** its cassette buffer table (`docs/design.md`, "The cassette buffer") should reserve 919-1019 as "free for a game's own use, not kept across loads". MonkeySwap keeps its board (919-982) and match list (983-1019) there (2026-11-08). Do it when work is next in that repo.
 
 ## Next
