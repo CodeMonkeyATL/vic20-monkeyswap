@@ -1,5 +1,5 @@
 100 poke36878,15:t=rnd(-ti):rem once: volume, seed; a new game starts at 110 and keeps the mute
-110 z=36874:pokez+5,8:bh=1012:print"{clr}":poke8152,42:poke38872,0:rem init: z sound base, colors, spinner (*) in black
+110 z=36874:pokez+5,8:bh=1012:print"{clr}{yel}monkey swap":poke8152,42:poke38872,0:rem init: z sound base, colors, title, spinner (*) in black
 180 dimpg%(14):bb=919:fori=0to13:readpg%(i):next:data65,83,88,90,81,87,32,,7,2,5,3,4,1:rem pieces 0-5, 6=empty: codes at 0-6, colors at 8-13
 
 200 fori=0to63:a=bb+i:rem fill, no runs of 3, drawing as it goes
@@ -74,7 +74,7 @@
 3630 ifq>5thenq=5
 3640 j=8:fors=bb+gtobb+q*8+gstep8:gosub3100:next:return
 
-3800 print"{home}{down}{rght}{yel}"sc;:return:rem show the score
+3800 print"{home}{wht}"tab(14)sc;:return:rem show the score
 
 5000 ifhc<0thenifhwthenhw=0:km=0:gosub1990:x=-1-hc:cr=int(x/8):cc=xand7:gosub1980:rem hint: cursor to the found cell
 5005 ifhc<0orti-kt<120thenreturn:rem idle 2 s: try one swap (hc: cell*2+direction; -1-x found at x); none works: game over
