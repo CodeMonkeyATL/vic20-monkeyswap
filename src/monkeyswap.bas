@@ -15,7 +15,8 @@
 350 l=k:r=cr-(k=83andcr<7)+(k=87andcr>0):c=cc-(k=68andcc<7)+(k=65andcc>0):rem 83 s, 87 w, 68 d, 65 a
 420 ifr=crthenifc=ccthen340
 430 ifasc(a$)>127thengosub2200:goto330
-440 km=0:gosub1990:cr=r:cc=c:gosub1980:goto340
+440 km=0:gosub1990:cr=r:cc=c:gosub1980
+450 poke36877,250:fori=11to0step-1.5:poke36878,i:next:poke36877,0:poke36878,15:goto340:rem woosh
 
 1200 p=7771+i*2+int(i/8)*28:w=peek(bb+i):pokep,pg%(wand7)-128*(w>7):rem draw cell i; marked (>7) reversed
 1230 pokep+30720,pg%(wor8):return
