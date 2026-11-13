@@ -1,15 +1,16 @@
 100 poke36878,15:t=rnd(-ti):rem once: volume, seed; a new game starts at 110 and keeps the mute
-110 z=36874:pokez+5,8:bh=1012:print"{clr}{yel}monkey swap":poke8152,42:poke38872,0:rem init: z sound base, colors, title, spinner (*) in black
+110 z=36874:pokez+5,8:bh=1012:print"{clr}{yel}monkey swap":poke7942,42:poke38662,0:rem init: z sound base, colors, title, spinner (*) in black
+120 poke214,19:print:print"{grn}wasd{cyn}=move {grn}+shift{cyn}=swap":print"{grn}h{cyn}int {grn}m{cyn}ute {grn}qq{cyn}=quit";:rem key hints, rows 20-21
 180 dimpg%(14):bb=919:fori=0to13:readpg%(i):next:data65,83,88,90,81,87,32,,7,2,5,3,4,1:rem pieces 0-5, 6=empty: codes at 0-6, colors at 8-13
 
-200 fori=0to63:a=bb+i:rem fill, no runs of 3, drawing as it goes
+200 gosub5950:fori=0to63:a=bb+i:rem fill, no runs of 3, drawing as it goes
 210 t=int(rnd(1)*6):if(t=peek(a-1)andt=peek(a-2))or(t=peek(a-8)andt=peek(a-16))then210
 230 pokea,t:gosub1200:next:ho=rnd(1)*128:gosub3800:cr=3:cc=3:e=peek(841):rem ho: random first trial; e: launcher's device
 
 330 gosub1980:poke198,0:kt=ti:rd=0:rem play: wasd moves, shift+wasd swaps
 340 geta$:ifa$=""thengosub5000:goto340
-345 poke38872,0:kt=ti:k=asc(a$)and127:hw=(k=72):ifk=81thenifl=81then5530:rem h hint (72), qq quits (81)
-347 ifk=77thenpokez+4,15-peek(z+4):rem m mutes (77): the volume register is 15 or 0
+345 poke38662,0:kt=ti:k=asc(a$)and127:hw=(k=72):ifk=81thenifl=81then5530:rem h hint (72), qq quits (81)
+347 ifk=77thenpokez+4,15-peek(z+4):gosub5950:rem m mutes (77): the volume register is 15 or 0
 350 l=k:r=cr-(k=83andcr<7)+(k=87andcr>0):c=cc-(k=68andcc<7)+(k=65andcc>0):rem 83 s, 87 w, 68 d, 65 a
 420 ifr=crthenifc=ccthen340
 430 ifasc(a$)>127thengosub2200:goto330
@@ -81,11 +82,11 @@
 5010 ifhc>127then5500
 5020 k=(hc+ho)and127:x=int(k/2):w=kand1:y=x+1+7*w:hc=hc+1:mn=0:gosub5900:rem from a random start, wrapping
 5030 if(xand7)-w>6ory>63thenreturn:rem off the board
-5040 ht=1:gosub2400:gosub2990:gosub2400:ht=0:ifmnthenhc=-1-x:poke38872,0
+5040 ht=1:gosub2400:gosub2990:gosub2400:ht=0:ifmnthenhc=-1-x:poke38662,0
 5050 return
 
-5500 poke214,20:print:printtab(6)"{wht}game over";:gosub5600:rem no move left
-5510 ifethenprint:printtab(5)"{red}l{wht}eaderboard";:rem from a launcher: offer l
+5500 poke214,21:print:print"{wht}game over";:gosub5600:rem no move left; row 22
+5510 ifethenprint" {red}l{wht}eaderboard";:rem from a launcher: offer l, on the same row
 5515 fori=200to140step-.5:pokez,i:next:pokez,0:rem falling tone
 5520 poke198,0:wait198,1:geta$:ifa$="l"thenifethen5540:rem l back to a launcher; any other key plays again
 5525 run110
@@ -99,7 +100,9 @@
 5600 poke900,2:poke901,253:poke902,2:poke903,1:v=sc:rem result for the launcher: game 2, endless, 1 field (pts)
 5610 fori=904to906:t=int(v/256):pokei,v-256*t:v=t:next:return
 
-5900 sp=(sp+2)and7:poke38872,spor1:return:rem spinner: one step, cycling white, cyan, green, yellow
+5900 sp=(sp+2)and7:poke38662,spor1:return:rem spinner: one step, cycling white, cyan, green, yellow
+
+5950 fori=38868to38870:pokei,3+(peek(z+4)=0):next:return:rem the hint's "ute": red when muted, cyan with sound
 
 
 6000 n=175+3*mn+6*rd:ifn>254thenn=254:rem match ding: pitch from the pieces (mn) and the round (rd)
