@@ -10,12 +10,10 @@ Known issues and ideas. Nothing here is scheduled; the user picks what's worth d
 
 ## Next
 
-- **Show when keys aren't taken (the user, 2026-11-12):** a keypress sometimes does nothing, or takes a second or two, and nothing says the game is busy. Wanted: a simple, cheap cue. Since the third tightening pass the cursor box is gone during a swap's cascade, which covers the time keys are dropped; judge in play whether that's enough. The other wait is a no-moves trial after 2 s idle (5005): a key pressed then isn't lost, but waits for the trial to finish, with only the spinner showing.
+- **Decorations (the user's list, 2026-11-12), as memory allows** (293 bytes free after play): the title; key hints on screen (WASD and Shift+WASD, `qq`, `h`, `m`); `m` to mute, which isn't implemented yet but wanted (2up11 has it); attribution, optional, only if memory is left. Maybe "invalid move" text, printed in black and revealed by changing its color.
 
 ## Later
 
-- **Sounds:** a lift for the swap (as RingSort's), a merge sound rising with each cascade round (as 2up11's), a game-over tone. Probably no memory left on an unexpanded VIC.
-- **Title and attribution** on screen, if memory allows (the README has them).
 - **A faster no-moves check:** the pattern version (pairs and gaps) took 510 bytes; only with more memory.
 
 - Special pieces: match 4 clears a row or column, an L or T shape clears a 3x3 area, match 5 clears one color. A reversed glyph could mark one.
