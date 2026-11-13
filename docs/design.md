@@ -312,6 +312,8 @@ The result writer moved into its own subroutine (5600) so both game over and `qq
 
 **Tested in xvic (2026-11-10),** with `2,MONKEYSWAP` added for the test to the mock list `games` in `prgs-latest` (and removed again): launcher → `2` → one match (30) → `qq` → the launcher showed `/v1/s?g=2&v=2&p=1&a=30`; launcher → `2` → `qq` at once → nothing posted; a forced game over in a launched game (score 4321, `hc=128` from the prompt) → `LEADERBOARD` on row 22 → `l` → `/v1/s?g=2&v=2&p=1&a=4321`. Started on its own: `qq` ends at `READY.`, and a game over shows no `LEADERBOARD`, where `l` starts a new game.
 
-Still needed elsewhere: register game 2 (MonkeySwap, variant 2 ENDLESS, field PTS) in `leaderboard-service`'s seed, and add it to the launcher's game list (see `todo.md`).
+**Regression test (2026-11-13),** after the third tightening pass, the mute, the title and the key hints (PRG 3128): the same cases, all passed with the same results, with `GAME OVER LEADERBOARD` on row 22 below the hints and no scroll. The forced game over now writes `sc` and `hc` through the monitor instead of the prompt. Then the two `/v1/s` requests went to the local .NET service by hand (the launcher's posting is still a stub), and both got `OK`.
+
+**Registered (2026-11-13):** game 2 (`monkeyswap`, variant 2 ENDLESS, field PTS) is in `leaderboard-service`'s seed, and MonkeySwap is in the launcher's mock list `games`, with its board `b2`.
 
 **Start-up tried and dropped (2026-11-09):** a random fill that the cascade then "settles" saved about 60 bytes over the no-runs fill (200), but took 15 s at a typical start and up to 90 s, so the no-runs fill stayed.
