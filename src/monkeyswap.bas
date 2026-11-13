@@ -1,4 +1,5 @@
-100 z=36874:pokez+5,8:pokez+4,15:t=rnd(-ti):bh=1012:print"{clr}":poke8152,42:poke38872,0:rem init: z sound base, colors, volume, spinner (*) in black
+100 poke36878,15:t=rnd(-ti):rem once: volume, seed; a new game starts at 110 and keeps the mute
+110 z=36874:pokez+5,8:bh=1012:print"{clr}":poke8152,42:poke38872,0:rem init: z sound base, colors, spinner (*) in black
 180 dimpg%(14):bb=919:fori=0to13:readpg%(i):next:data65,83,88,90,81,87,32,,7,2,5,3,4,1:rem pieces 0-5, 6=empty: codes at 0-6, colors at 8-13
 
 200 fori=0to63:a=bb+i:rem fill, no runs of 3, drawing as it goes
@@ -8,11 +9,13 @@
 330 gosub1980:poke198,0:kt=ti:rd=0:rem play: wasd moves, shift+wasd swaps
 340 geta$:ifa$=""thengosub5000:goto340
 345 poke38872,0:kt=ti:k=asc(a$)and127:hw=(k=72):ifk=81thenifl=81then5530:rem h hint (72), qq quits (81)
+347 ifk=77thenpokez+4,15-peek(z+4):rem m mutes (77): the volume register is 15 or 0
 350 l=k:r=cr-(k=83andcr<7)+(k=87andcr>0):c=cc-(k=68andcc<7)+(k=65andcc>0):rem 83 s, 87 w, 68 d, 65 a
 420 ifr=crthenifc=ccthen340
 430 ifasc(a$)>127thengosub2200:goto330
 440 km=0:gosub1990:cr=r:cc=c:gosub1980
-450 pokez+3,250:fori=11to0step-1.5:pokez+4,i:next:pokez+3,0:pokez+4,15:goto340:rem woosh
+450 ifpeek(z+4)thenpokez+3,250:fori=11to0step-1.5:pokez+4,i:next:pokez+3,0:pokez+4,15:rem woosh, unless muted
+460 goto340
 
 1200 p=7771+i*2+int(i/8)*28:w=peek(bb+i):pokep,pg%(wand7)-128*(w>7):rem draw cell i; marked (>7) reversed
 1230 pokep+30720,pg%(wor8):return
@@ -85,7 +88,7 @@
 5510 ifethenprint:printtab(5)"{red}l{wht}eaderboard";:rem from a launcher: offer l
 5515 fori=200to140step-.5:pokez,i:next:pokez,0:rem falling tone
 5520 poke198,0:wait198,1:geta$:ifa$="l"thenifethen5540:rem l back to a launcher; any other key plays again
-5525 run
+5525 run110
 
 5530 ifethenifsc>0thengosub5600:rem qq: a launched game leaves its score so far
 5540 pokez+4,0:pokez+5,27:print"{clr}{blu}";:ife=0thenend:rem leave: started alone, just end
