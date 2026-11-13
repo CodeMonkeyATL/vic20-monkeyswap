@@ -19,6 +19,7 @@ To be written once the game plays.
 | Shift + `w` `a` `s` `d` | swap the piece under the cursor with its neighbour |
 | `q` `q` | quit (`q` twice in a row); started from the launcher, go back to it |
 | `h` | hint: the cursor jumps to a piece that can make a match |
+| `m` | mute; press again for sound |
 | `l` | at game over, back to the launcher (when it started the game); any other key plays again |
 
 **Quit by accident?** The game is still in memory, so you can carry on where you left off. At `READY.`, type:
