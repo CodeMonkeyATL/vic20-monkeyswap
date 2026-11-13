@@ -136,14 +136,14 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 
 | Lines | Routine |
 |---|---|
-| 100 | init: black screen, volume 15 (for the sounds), seed `rnd`, set the buffer addresses, clear the screen (which makes color RAM white), read the piece table (180); 110 puts the spinner's ✱ (screen code 42) at 8152 in black |
-| 200 | fill the board with random pieces 0-5, without runs of three, drawing each cell as it's placed (1200): a piece (`t`) that would make three with the two cells before it or the two above is drawn again. **There are no edge guards:** in columns 0-1 the "two before" are the end of the previous row, and in rows 0-1 the "two above" are bytes before the board (903-918, only read). A match there just rerolls a piece that didn't need it, which is harmless and saves the two guards. Then the random start for the no-moves check (`ho`), the score, and the cursor's position (row 3, column 3). |
-| 300 | play: show the cursor, empty the buffer (autostart's stray `z` and keys typed during setup), then wait for keys. The key becomes a number, `k=asc(a$)and127`, which drops the Shift bit so both forms share one decode. `w`/`a`/`s`/`d` (87, 65, 83, 68) move the cursor one cell (erase, move, draw, then the woosh on 450); the new row and column use comparisons as numbers (−1 when true): `r=cr-(k=83andcr<7)+(k=87andcr>0)`, so at an edge, or for any other key, nothing changes and 420 goes back to waiting (there's no separate "is it wasd" test). With Shift held (`asc(a$)>127`) the same direction swaps instead (2200), and the buffer is emptied afterwards (back to 330). `q` twice in a row quits (345: the previous key is kept in `l`). A key also erases the spinner and restarts the 2-second idle timer (`kt`). While no key is waiting, 5000 runs one trial of the no-moves check. Typed-ahead moves are kept, so quick taps all count.  `h` asks for a hint (347: `hw` is −1 for `h`, 0 for any other key). |
+| 100 | init: the sound registers' base `z` (see "Sound"), black screen, volume 15 (for the sounds), seed `rnd`, clear the screen (which makes color RAM white), the spinner's ✱ (screen code 42) at 8152 in black; 180 sets the board address and reads the piece table. The statements are spread over the two lines so both fit in 88 characters (which is why `bh` is on 100 and `bb` on 180). |
+| 200 | fill the board with random pieces 0-5, without runs of three, drawing each cell as it's placed (1200): a piece (`t`) that would make three with the two cells before it or the two above is drawn again. The cell's address is kept in `a`, and one `if` tests both pairs, `(…and…)or(…and…)`; the parentheses are for the reader. **There are no edge guards:** in columns 0-1 the "two before" are the end of the previous row, and in rows 0-1 the "two above" are bytes before the board (903-918, only read). A match there just rerolls a piece that didn't need it, which is harmless and saves the two guards. Then the random start for the no-moves check (`ho`), the score, the cursor's position (row 3, column 3), and the launcher's device (`e`). |
+| 330 | play: show the cursor, empty the buffer (autostart's stray `z` and keys typed during setup), then wait for keys. **The cursor is drawn here and nowhere else in the swap** (2026-11-12): a swap comes back to 330, so the box is gone while a cascade plays and returns when the board accepts keys again. The key becomes a number, `k=asc(a$)and127`, which drops the Shift bit so both forms share one decode. `w`/`a`/`s`/`d` (87, 65, 83, 68) move the cursor one cell (erase, move, draw, then the woosh on 450); the new row and column use comparisons as numbers (−1 when true): `r=cr-(k=83andcr<7)+(k=87andcr>0)`, so at an edge, or for any other key, nothing changes and 420 goes back to waiting (there's no separate "is it wasd" test). With Shift held (`asc(a$)>127`) the same direction swaps instead (2200), and the buffer is emptied afterwards (back to 330). `q` twice in a row quits (345: the previous key is kept in `l`). A key also erases the spinner and restarts the 2-second idle timer (`kt`). While no key is waiting, 5000 runs one trial of the no-moves check. Typed-ahead moves are kept, so quick taps all count.  `h` asks for a hint (345: `hw` is −1 for `h`, 0 for any other key). |
 | 1200 | draw cell `i` by poking screen and color RAM: the cell's byte in `w` (`peek(bb+i)`), then glyph `pg%(wand7)` (+128, reversed, when marked) and color `pg%(wor8)` at `7771+i*2+int(i/8)*28`. That's row × 44 + column × 2 written with one `int`: `i` = 8r + c, so 2i + 28r = 44r + 2c. |
 | 1980 | draw the cursor: `km=1`, then falls into 1990 |
 | 1990 | the cursor box in mode `km`: a 3x3 box around the piece at `cr`, `cc` (its top-left is one row up and one column left of the piece: 7771 − 23 = 7748), then falls into 2000. Erase with `km=0:gosub1990`. |
-| 2000 | draw (`km=1`) or erase (`km=0`) a rounded box with its top-left corner at `ka`. `kw` is the offset to its right edge (2 or 4) and `kh` the offset to its bottom row (44 or 88), so the corners are `ka`, `ka+kw`, `ka+kh` and `ka+kh+kw` with no arithmetic on cell counts. Four corners, then the top and bottom lines, then the sides one screen row (22) at a time. |
-| 2200 | swap the piece at `cr`,`cc` with its neighbour at `r`,`c`: erase the cursor (the swap sounds play along: see "Sound") (which leaves `ka` at the cursor box's corner); grow the box over both cells: the corner moves 2 left for a swap to the left and 44 up for a swap upward (`ka=ka+2*(c<cc)+44*(r<cr)`, true being −1), and `kw=2-2*(r=cr)` makes it 4 wide for a swap in the same row, `kh` likewise 88 for one in the same column; pause; swap the two cells' bytes through `t` (2400) and redraw both cells; pause; check around both cells (2990); erase the grown box; draw the cursor at the new spot. With no match (`mn=0`) the pieces swap back and the cursor stays. With a match, the cascade (3500) clears, lets the columns fall and refill, and repeats while new runs form. |
+| 2000 | draw (`km=1`) or erase (`km=0`) a rounded box with its top-left corner at `ka`. `kw` is the offset to its right edge (2 or 4) and `kh` the offset to its bottom row (44 or 88), so the corners are `ka`, `ka+kw`, `ka+kh` and `ka+kh+kw` with no arithmetic on cell counts. Four corners, then the top and bottom lines, then the sides one screen row (22) at a time; each loop's glyph is worked out once, into `t`. |
+| 2200 | swap the piece at `cr`,`cc` with its neighbour at `r`,`c`: erase the cursor (the swap sounds play along: see "Sound") (which leaves `ka` at the cursor box's corner); grow the box over both cells: the corner moves 2 left for a swap to the left and 44 up for a swap upward (`ka=ka+2*(c<cc)+44*(r<cr)`, true being −1), and `kw=2-2*(r=cr)` makes it 4 wide for a swap in the same row, `kh` likewise 88 for one in the same column; pause; swap the two cells' bytes through `t` (2400) and redraw both cells; pause; check around both cells (2990); erase the grown box; set the cursor's new spot (330 draws it once the move is over). With no match (`mn=0`) the pieces swap back and the cursor stays. With a match, the cascade (3500) clears, lets the columns fall and refill, and repeats while new runs form. |
 | 2400 | swap the values of cells `x` and `y` through `t` and redraw both; in a trial (`ht`), swap only, no drawing |
 | 2900 | pause `n` jiffies (1/60 s), using `ti`, so the speed doesn't depend on what else runs |
 | 2990 | check around both swapped cells: 3000 for `x`, then falls into 3000 for `y` |
@@ -157,7 +157,7 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 | 3800 | show the score on row 1, with cursor codes (`{home}{down}{rght}`) |
 | 5000 | the hint: when `h` was pressed (`hw`) and a move is known (`hc<0`), erase the cursor, put it on the found cell (`x=-1-hc`), draw it; then falls into 5005, which returns at once while `hc<0` |
 | 5005 | one trial of the no-moves check, after 2 s idle (`ti-kt>=120`) and until a move is found (`hc<0`): advance the spinner, pick cell `x` and neighbour `y` (right or down) from `(hc+ho)and127`, skip it if `y` is off the board, swap the bytes, check around both cells in test mode (a run sets `mn`), swap back. Cell 63's last trial done with no move: game over (5500). |
-| 5500 | game over: GAME OVER on row 21 (`poke214,20:print` puts the cursor on row 21: 214 is the cursor's row, and the `print` moves to the next row and sets the line up properly; then `tab(6)`), the result for the launcher (5600). Started from a launcher (`peek(841)` not 0), `LEADERBOARD` with a red `l` on row 22 (5510). Then the falling tone (5515). Then a key: `poke198,0:wait198,1` waits for one in the buffer and `get` takes it; `l` from a launcher goes back to it (5540), any other key starts over with `run` (5525; 330 empties the buffer). |
+| 5500 | game over: GAME OVER on row 21 (`poke214,20:print` puts the cursor on row 21: 214 is the cursor's row, and the `print` moves to the next row and sets the line up properly; then `tab(6)`), the result for the launcher (5600). Started from a launcher (`e`, the device from 841, not 0), `LEADERBOARD` with a red `l` on row 22 (5510). Then the falling tone (5515). Then a key: `poke198,0:wait198,1` waits for one in the buffer and `get` takes it; `l` from a launcher goes back to it (5540), any other key starts over with `run` (5525; 330 empties the buffer; `run` clears `e`, and 230 reads it again from 841, which is still there). |
 | 5530 | leave (`qq`): from a launcher, write the score so far (5600) if there is one; then 5540 |
 | 5540 | the VIC's normal colors, clear the screen; started on its own, end (the game can be resumed from `READY.`, see "Resuming after a quit"); from a launcher, load it (5550-5570, see "Launcher") |
 | 5600 | the result for the launcher in the cassette buffer: 900 game 2, 901 check 253, 902 variant 2 endless, 903 one field, 904-906 the score, low byte first |
@@ -168,6 +168,8 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 
 | Name | Meaning |
 |---|---|
+| `z` | 36874, the base of the sound and color registers: `z` to `z+3` are the four voices, `z+4` the volume, `z+5` the screen colors |
+| `e` | the launcher's device, from 841 (0: started on its own), read once at 230 |
 | `bb`, `bh` | addresses of the board (919) and the hole bytes (1012) in the cassette buffer; the match list (983) is a literal |
 | `w` | a cell's byte while drawing (1200) or falling (3440); also, since no two of these overlap, the box's bottom-left address (2000) and a trial's direction (5020: 0 right, 1 down) |
 | `pg%()` | piece glyph (screen code) at the type's index, its color at index + 8 |
@@ -185,7 +187,7 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 | `q` | a cell address while marking a window (3120); a column's lowest hole row (3340, 3420, 3600; 3640's `for` reads its limit once, so marking may reuse `q`) |
 | `g` | column, in gravity (3300, 3420) |
 | `b` | the column's hole byte (see "Data model") |
-| `a` | in 3420: the board address of the cell being filled |
+| `a` | the board address of the cell being filled: in the fill (200) and in 3420 |
 | `cl`, `ch`, `lm` | in the cascade: first and last changed column, deepest changed row |
 | `r` | also the row loop in the cascade's horizontal check |
 | `sc` | the score |
@@ -199,12 +201,14 @@ The source is tightened (2026-11-08): statements are joined onto as few lines as
 | `i` | loop counter (board loops); the cell for 1200 and 3000 |
 | `j` | loop counter in the box; a window's step |
 | `p` | a piece's screen address while drawing |
-| `t` | the piece being tried while filling; a cell's byte or type in a window (3100, 3120); the swap's temporary (2400); the pause's end time (2900); a throwaway result (`rnd(-ti)` seeding) |
+| `t` | the piece being tried while filling; a cell's byte or type in a window (3100, 3120); the swap's temporary (2400); the pause's end time (2900); a box line's glyph (2050, 2070); the score's higher bytes (5610); a throwaway result (`rnd(-ti)` seeding) |
 | `a$` | last key from `get` (also the key after game over) |
 
 ## Sound
 
 Each sound's register and values, for tuning by ear. Chosen 2026-11-11 from `meta/src/soundlib.bas` (letters there): the match ding from 2up11's coin ding (`i`, `j`, `k`), the swap from RingSort's ring lift (`a`, as the box grows; the ring down `b` for the shrink was dropped, since the buzz or the match ding already ends every swap), the failed swap from RingSort's buzz (`c`; the woosh `d` after it was dropped, since the two said the same thing and the woosh cost 22 bytes more; it went to cursor moves instead), game over from 2up11's falling tone (`l`). Built one at a time: the match ding, the swap sounds, game over, then a shortened woosh on a cursor move (2026-11-12; 2up11's slide `h` was tried first, but its falling pitch sounded like a failure).
+
+**The registers are written as `z` plus an offset (2026-11-12):** `z=36874` is the low voice, `z+1` 36875 (mid), `z+2` 36876 (high), `z+3` 36877 (noise), `z+4` 36878 (volume), and `z+5` 36879 (screen colors, not a sound register, but next in line). The code had 17 of these five-digit numbers; `z+2` takes 3 bytes instead of 5 and `z` 1, which saved about 27 bytes after the variable's own cost. The numbers below are the registers' addresses.
 
 The volume is set to 15 at init (100) and to 0 on leaving (5540), so no note is left playing at `READY.` or in the launcher.
 
@@ -256,6 +260,7 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 | 2026-11-11 | 312 | the woosh dropped from the failed swap, the buzz kept (PRG 2948, swap sounds 78 bytes). Measured after play with failed swaps and a match. |
 | 2026-11-11 | 273 | the game-over tone (PRG 2987, 39 bytes; no new variables). Measured after play with a match. |
 | 2026-11-12 | ~215 | a woosh on cursor moves (PRG 3045, 58 bytes; no new variables). 216 measured with the slide in its place (PRG 3044), after play with moves, failed swaps and a match. |
+| 2026-11-12 | 293 | third tightening pass (PRG 2953, 92 less; two new variables, `z` and `e`, so 78 more free): the registers as `z` plus an offset, the fill's two tests on one line, `e` for `peek(841)`, init on two lines, the cursor drawn only at 330, and smaller savings in the box and the result writer. Measured after play with moves, failed swaps, matches and a hint. |
 
 
 ## Resuming after a quit
@@ -263,7 +268,7 @@ Free memory measured with `?fre(0)` after quitting, with the date and what chang
 After `qq` in a game started on its own (from the launcher, `qq` loads the launcher instead), everything the game needs is still in memory: the variables (score, cursor, the no-moves check's progress) and the board, which lives in the cassette buffer that `end` doesn't touch. Only the screen was cleared and the colors reset. At `READY.`:
 
 ```
-print chr$(147):poke36879,8:l=0:fori=0to63:gosub1200:next:gosub3800:goto300
+print chr$(147):poke36879,8:l=0:fori=0to63:gosub1200:next:gosub3800:goto330
 ```
 
 | Part | Does |
@@ -273,7 +278,7 @@ print chr$(147):poke36879,8:l=0:fori=0to63:gosub1200:next:gosub3800:goto300
 | `l=0` | forgets the last `q`, which would otherwise make the next single `q` quit |
 | `fori=0to63:gosub1200:next` | redraws the board from the cassette buffer, cell by cell |
 | `gosub3800` | reprints the score |
-| `goto300` | draws the cursor and continues the play loop |
+| `goto330` | draws the cursor and continues the play loop |
 
 The cursor box comes out white: clearing the screen sets color RAM to white. The spinner doesn't show after a resume: the clear erased its ✱, and only its color is changed from then on; `poke8152,42` brings it back, but the resume line has no room for it within the 88 characters typed at the prompt. `run` or editing a program line clears the variables, after which only the board survives. Tested in xvic (2026-11-09): same board, cursor and score after resuming; a move works; a single `q` doesn't quit.
 
