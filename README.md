@@ -1,17 +1,19 @@
 # MonkeySwap
 
-MonkeySwap is a match-3 puzzle game for the **unexpanded VIC-20**, written in Commodore BASIC V2. **In development:** nothing is playable yet.
+MonkeySwap is a match-3 puzzle game for the **unexpanded VIC-20**, written in Commodore BASIC V2.
 
-## features (planned)
+## features
 
 - an 8x8 board: swap two neighbouring pieces to line up three or more of a kind
-- two styles: **levels**, each with a score target and a move limit, and **endless**, where play goes on until no swap is left
+- endless play: matched pieces clear, the columns fall and refill, and new runs cascade; the game ends when no swap is left (a spinner shows it looking while you think)
+- chains pay more: each cascade round multiplies the points, with a ding that rises with the round
+- a hint on request, never by itself
 - online leaderboards through the CodeMonkeyATL launcher: the game leaves its score at game over, and the launcher posts it the next time it runs
 - runs on a stock VIC-20 with no memory expansion
 
 ## how to play
 
-To be written once the game plays.
+Move the cursor to a piece and swap it with a neighbour to make a row or column of three or more of a kind. Matched pieces clear and score 10 each, times the cascade round: the swap's own match is round 1, the runs that form as pieces fall are rounds 2, 3 and so on. A swap that makes no match swaps back. When no swap on the board would make a match, the game is over.
 
 | Key | Action |
 |---|---|
@@ -32,7 +34,8 @@ That clears the screen, sets the black background again, forgets the last `q`, r
 
 ## screenshots
 
-None yet.
+![gameplay](screenshots/gameplay.png)
+![later in a game](screenshots/later.png)
 
 ## compatibility
 
